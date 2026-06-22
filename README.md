@@ -136,7 +136,9 @@ python basicsr/train.py -opt options/DMDP-FR_stage3_triple.yml
 Distributed training example:
 
 ```bash
-python -m torch.distributed.launch --nproc_per_node=4 --master_port=29434 basicsr/train.py -opt options/DMDP-FR_stage3_triple.yml --launcher pytorch
+torchrun --nproc_per_node=4 --master_port=29434 basicsr/train.py -opt options/DMDP-FR_stage1_triple.yml --launcher pytorch
+torchrun --nproc_per_node=4 --master_port=29435 basicsr/train.py -opt options/DMDP-FR_stage2_triple.yml --launcher pytorch
+torchrun --nproc_per_node=4 --master_port=29436 basicsr/train.py -opt options/DMDP-FR_stage3_triple.yml --launcher pytorch
 ```
 
 Optional task-specific configs:
