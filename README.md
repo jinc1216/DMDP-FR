@@ -116,15 +116,14 @@ Stage-I trains the dynamic multi-granularity DQ-VAE prior from HQ faces. Stage-I
 
 Please put the following validation and testing datasets under the `./datasets/` folder.
 
-| Datasets           | Short Description                          | Download                                                                                                                      |
-|--------------------|--------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
-| CelebA-Test (HQ)   | 3000 HQ ground-truth images for evaluation | [celeba_512_validation.zip](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/celeba_512_validation.zip) |
-| CelebA-Test (LQ)   | 3000 synthetic LQ images for testing       | [self_celeba_512_v2.zip](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/self_celeba_512_v2.zip)       |
-| LFW-Test (LQ)      | 1711 real-world images for testing         | [lfw_cropped_faces.zip](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/lfw_cropped_faces.zip)         |
-| WebPhoto-Test (LQ) | 407 real-world images for testing          | [WebPhoto_Test.zip](https://github.com/TencentARC/GFPGAN)             |
-| WIDER-Test (LQ)    | 970 real-world images for testing          | [Wider-Test.zip](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/Wider-Test.zip)                       |
+| Datasets | Data Type | Short Description | Download |
+| --- | --- | --- | --- |
+| CelebA-Test | `gt + lq` | 3000 paired HQ/LQ images for full-reference evaluation | [GT: celeba_512_validation.zip](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/celeba_512_validation.zip) / [LQ: self_celeba_512_v2.zip](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/self_celeba_512_v2.zip) |
+| LFW-Test | `lq only` | 1711 real-world LQ images for testing | [lfw_cropped_faces.zip](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/lfw_cropped_faces.zip) |
+| WebPhoto-Test | `lq only` | 407 real-world LQ images for testing | [WebPhoto-Test](https://github.com/TencentARC/GFPGAN) |
+| WIDER-Test | `lq only` | 970 real-world LQ images for testing | [Wider-Test.zip](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/Wider-Test.zip) |
 
-For the default validation during training, prepare paired images under `datasets/faces/validation/`. The `gt` folder contains aligned HQ faces. The `lq` folder contains the corresponding degraded LQ faces for Stage-II and Stage-III validation.
+For the default validation during training, prepare the paired CelebA-Test images under `datasets/faces/validation/`. The `gt` folder contains aligned HQ faces. The `lq` folder contains the corresponding degraded LQ faces for Stage-II and Stage-III validation.
 
 ```text
 datasets/
@@ -138,6 +137,29 @@ datasets/
         000001.png
         000002.png
         ...
+```
+
+For real-world testing, only LQ images are available. A recommended layout is:
+
+```text
+datasets/
+  faces/
+    real_world/
+      lfw_test/
+        lq/
+          000001.png
+          000002.png
+          ...
+      webphoto_test/
+        lq/
+          000001.png
+          000002.png
+          ...
+      wider_test/
+        lq/
+          000001.png
+          000002.png
+          ...
 ```
 
 The default validation configs use:
@@ -287,6 +309,10 @@ python scripts/generate_dq_latent_gt.py \
   --ckpt_path experiments/pretrained_models/dqvae/dqvae_stage1_triple.pth \
   -o experiments/pretrained_models/dqvae
 ```
+
+## Acknowledgement
+
+We thank the authors and contributors of [BasicSR](https://github.com/XPixelGroup/BasicSR), [CodeFormer](https://github.com/sczhou/CodeFormer), [VQFR](https://github.com/TencentARC/VQFR), and [DAEFR](https://github.com/LIAGM/DAEFR) for making their code, models, and project resources publicly available.
 
 [//]: # (## Repository Contents)
 
