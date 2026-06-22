@@ -89,9 +89,9 @@ Keep all datasets under `./datasets/` and edit the `dataroot_*` fields in `optio
 
 ### Training Dataset
 
-DMDP-FR uses FFHQ for all three training stages. The images should be aligned face images at `512x512`.
+DMDP-FR uses [FFHQ](https://github.com/NVlabs/ffhq-dataset) for all three training stages. The images should be aligned face images at `512x512`.
 
-If you start from the original FFHQ `1024x1024` images, resize them to `512x512` before training. A simple layout is:
+The original FFHQ images are `1024x1024`. Resize them to `512x512` before training. A simple layout is:
 
 ```text
 datasets/
@@ -114,7 +114,16 @@ Stage-I trains the dynamic multi-granularity DQ-VAE prior from HQ faces. Stage-I
 
 ### Validation Dataset
 
-Prepare paired validation images under `datasets/faces/validation/`. The `gt` folder contains aligned HQ faces. The `lq` folder contains the corresponding degraded LQ faces for Stage-II and Stage-III validation.
+Please put the following validation and testing datasets under the `./datasets/` folder.
+
+| Datasets | Short Description | Download |
+| --- | --- | --- |
+| CelebA-Test (HQ) | 3000 HQ ground-truth images for evaluation | [celeba_512_validation.zip](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/celeba_512_validation.zip) |
+| CelebA-Test (LQ) | 3000 synthetic LQ images for testing | [self_celeba_512_v2.zip](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/self_celeba_512_v2.zip) |
+| LFW-Test (LQ) | 1711 real-world images for testing | [lfw_cropped_faces.zip](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/lfw_cropped_faces.zip) |
+| WIDER-Test (LQ) | 970 real-world images for testing | [Wider-Test.zip](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/Wider-Test.zip) |
+
+For the default validation during training, prepare paired images under `datasets/faces/validation/`. The `gt` folder contains aligned HQ faces. The `lq` folder contains the corresponding degraded LQ faces for Stage-II and Stage-III validation.
 
 ```text
 datasets/
