@@ -1,0 +1,171 @@
+# DMDP-FR inpainting: mask corruption with image-level fidelity losses.
+name: DMDP-FR_inpainting
+model_type: DMDPFRModel
+num_gpu: 1
+manual_seed: 0
+
+datasets:
+  train:
+    name: FFHQ
+    type: FFHQBlindDataset
+    dataroot_gt: datasets/ffhq/ffhq_512
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    in_size: 512
+    gt_size: 512
+    mean: [0.5, 0.5, 0.5]
+    std: [0.5, 0.5, 0.5]
+    use_hflip: true
+    use_corrupt: false
+    gen_inpaint_mask: true
+
+    latent_gt_path: ~
+
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 2
+    dataset_enlarge_ratio: 100
+    prefetch_mode: ~
+
+# network structures
+network_g:
+  type: DMDPFR
+  grain_type: triple
+  img_size: 512
+  ch: 128
+  ch_mult: [1, 1, 2, 2, 4, 4, 4]
+  num_res_blocks: 2
+  attn_resolutions: [8, 16, 32]
+  in_channels: 3
+  z_channels: 256
+  router_config:
+    num_channels: 256
+    normalization_type: group-32
+    gate_type: 2layer-fc-SiLu
+  decoder_ch_mult: [1, 1, 2, 2, 4]
+  latent_size: 32
+  decoder_attn_resolutions: [32]
+  decoder_position_type: fourier+learned
+  codebook_size: 1024
+  codebook_dim: 256
+  dim_embd: 512
+  n_head: 8
+  n_layers: 9
+  max_position_tokens: 4096
+  connect_list: ['64', '128', '256']
+  fix_modules: ['quantize', 'decoder', 'post_quant_conv']
+  stage1_model_path: './experiments/pretrained_models/dqvae/dqvae_stage1_triple.pth'
+
+network_vqgan:
+  type: DQDynamicVQVAE
+  grain_type: triple
+  img_size: 512
+  ch: 128
+  ch_mult: [1, 1, 2, 2, 4, 4, 4]
+  num_res_blocks: 2
+  attn_resolutions: [8, 16, 32]
+  in_channels: 3
+  z_channels: 256
+  router_config:
+    num_channels: 256
+    normalization_type: group-32
+    gate_type: 2layer-fc-SiLu
+  decoder_ch_mult: [1, 1, 2, 2, 4]
+  latent_size: 32
+  decoder_attn_resolutions: [32]
+  decoder_position_type: fourier+learned
+  codebook_size: 1024
+  codebook_dim: 256
+  model_path: './experiments/pretrained_models/dqvae/dqvae_stage1_triple.pth'
+
+network_d:
+  type: UNetDiscriminatorSN
+  num_in_ch: 3
+
+path:
+  pretrain_network_g: ~
+  param_key_g: params_ema
+  strict_load_g: false
+  pretrain_network_d: ~
+  strict_load_d: true
+  resume_state: ~
+
+train:
+  use_amp: true
+  amp_dtype: bfloat16
+  grad_accum_steps: 4
+  use_hq_feat_loss: true
+  feat_loss_weight: 1.0
+  code_loss_weight: 0.3
+  gate_loss_weight: 2.0
+  encoder_gate_loss_weight: 1.0
+  supervise_all_codes: true
+  scale_adaptive_gan_weight: 0.1
+  fidelity_weight: 1.0
+  fix_generator: true
+
+  optim_g:
+    type: Adam
+    lr: !!float 7e-5
+    weight_decay: 0
+    betas: [0.9, 0.99]
+
+  optim_d:
+    type: Adam
+    lr: !!float 7e-5
+    weight_decay: 0
+    betas: [0.9, 0.99]
+
+  scheduler:
+    type: MultiStepLR
+    milestones: [250000, 300000]
+    gamma: 0.5
+
+  total_iter: 300000
+  warmup_iter: -1
+  ema_decay: 0.997
+
+  pixel_opt:
+    type: L1Loss
+    loss_weight: 1.0
+    reduction: mean
+
+  perceptual_opt:
+    type: LPIPSLoss
+    loss_weight: 1.0
+    use_input_norm: true
+    range_norm: true
+
+  gan_opt:
+    type: GANLoss
+    gan_type: hinge
+    loss_weight: !!float 1.0
+
+  net_g_start_iter: 0
+  net_d_iters: 1
+  net_d_start_iter: 296001
+  manual_seed: 0
+
+val:
+  val_freq: !!float 5e10
+  save_img: true
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 4
+      test_y_channel: false
+
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 1e4
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+dist_params:
+  backend: nccl
+  port: 29436
+
+find_unused_parameters: true

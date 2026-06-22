@@ -1,0 +1,16 @@
+torch>=1.7.1
+torchvision
+numpy
+opencv-python
+Pillow
+PyYAML
+scipy
+lmdb
+tqdm
+requests
+einops
+lpips
+tensorboard
+ffmpeg-python
+pyiqa
+wandb

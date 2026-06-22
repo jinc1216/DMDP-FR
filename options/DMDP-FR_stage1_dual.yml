@@ -1,0 +1,132 @@
+# DMDP-FR stage-1 (dual {8,16})
+# BasicSR port of DynamicVectorQuantization configs/stage1/dqvae-dual-r-05_imagenet.yml.
+name: DMDP-FR_stage1_dual
+model_type: DQVAEDynamicModel
+num_gpu: 1
+manual_seed: 0
+
+datasets:
+  train:
+    name: FFHQ
+    type: FFHQBlindDataset
+    dataroot_gt: datasets/ffhq/ffhq_512
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+    in_size: 512
+    gt_size: 512
+    mean: [0.5, 0.5, 0.5]
+    std: [0.5, 0.5, 0.5]
+    use_hflip: true
+    use_corrupt: false
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 2
+    dataset_enlarge_ratio: 100
+    prefetch_mode: cpu
+    num_prefetch_queue: 64
+
+network_g:
+  type: DQDynamicVQVAE
+  grain_type: dual
+  img_size: 512
+  ch: 128
+  ch_mult: [1, 1, 2, 2, 4, 4, 4]
+  num_res_blocks: 2
+  attn_resolutions: [8, 16]
+  dropout: 0.0
+  resamp_with_conv: true
+  in_channels: 3
+  z_channels: 256
+  router_config:
+    num_channels: 256
+    normalization_type: group-32
+    gate_type: 2layer-fc-SiLu
+  decoder_ch_mult: [1, 1, 2, 2, 4, 4]
+  decoder_attn_resolutions: [16]
+  decoder_position_type: fourier+learned
+  codebook_size: 1024
+  codebook_dim: 256
+  commitment_beta: 0.25
+  decay: 0.99
+  restart_unused_codes: true
+  quant_before_dim: 256
+  quant_after_dim: 256
+  quant_sample_temperature: 0.0
+
+network_d:
+  type: VQGANDiscriminator
+  nc: 3
+  ndf: 64
+  n_layers: 4
+
+path:
+  pretrain_network_g: ~
+  param_key_g: params_ema
+  strict_load_g: true
+  pretrain_network_d: ~
+  strict_load_d: true
+  resume_state: ~
+
+train:
+  # DQ-VAE loss settings from dqvae-dual-r-05_imagenet.yml
+  use_amp: true
+  amp_dtype: bfloat16
+  # Effective batch size = batch_size_per_gpu * num_gpus * grad_accum_steps.
+  # Increase this to simulate a larger batch when GPU memory is limited.
+  grad_accum_steps: 4
+  codebook_weight: 1.0
+  pixelloss_weight: 1.0
+  disc_weight: 0.8
+  perceptual_weight: 1.0
+  lpips_weight_path: weights/lpips/vgg.pth
+  gan_opt:
+    type: GANLoss
+    gan_type: hinge
+    loss_weight: !!float 1.0
+  budget_opt:
+    target_ratio: 0.5
+    gamma: 10.0
+    min_grain_size: 8
+    max_grain_size: 16
+    calculate_all: true
+
+  optim_g:
+    type: Adam
+    lr: !!float 7e-5
+    weight_decay: 0
+    betas: [0.5, 0.9]
+  optim_d:
+    type: Adam
+    lr: !!float 7e-5
+    weight_decay: 0
+    betas: [0.5, 0.9]
+  scheduler:
+    type: CosineAnnealingRestartLR
+    periods: [1600000]
+    restart_weights: [1]
+    eta_min: !!float 6e-5
+  total_iter: 1600000
+  warmup_iter: -1
+  ema_decay: 0.995
+  net_g_start_iter: 0
+  net_d_iters: 1
+  net_d_start_iter: 30001
+  manual_seed: 0
+
+val:
+  val_freq: !!float 1e4
+  save_img: false
+
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 1e4
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+dist_params:
+  backend: nccl
+  port: 29431
+
+find_unused_parameters: true
