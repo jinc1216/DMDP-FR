@@ -1,5 +1,5 @@
 # DMDP-FR stage-1 (triple {8,16,32})
-# Extension of DMGQ dual to triple granularity, following DynamicVectorQuantization's triple design.
+# Extension of DMGQ dual to triple granularity.
 name: DMDP-FR_stage1_triple
 model_type: DMGQVAEModel
 num_gpu: 1
@@ -82,7 +82,7 @@ path:
 train:
   use_amp: true
   amp_dtype: bfloat16
-  grad_accum_steps: 4
+  grad_accum_steps: 2
   codebook_weight: 1.0
   pixelloss_weight: 1.0
   disc_weight: 0.8
@@ -116,7 +116,7 @@ train:
     milestones: [50000, 100000, 150000, 200000, 250000, 300000, 350000]
     gamma: 1
     
-  total_iter: 400000
+  total_iter: 1600000
   
   warmup_iter: -1
   ema_decay: 0.995

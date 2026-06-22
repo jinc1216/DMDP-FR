@@ -248,43 +248,6 @@ python basicsr/train.py -opt options/DMDP-FR_colorization.yml
 python basicsr/train.py -opt options/DMDP-FR_inpainting.yml
 ```
 
-## Inference
-
-Aligned cropped faces:
-
-```bash
-python inference_dmdp_fr.py \
-  -i inputs/cropped_faces \
-  --has_aligned \
-  --opt options/DMDP-FR_stage3_triple.yml \
-  --ckpt_path experiments/pretrained_models/dmdp_fr/dmdp_fr_stage3.pth \
-  -w 0.5
-```
-
-Whole images with face detection and paste-back:
-
-```bash
-python inference_dmdp_fr.py \
-  -i inputs/whole_imgs \
-  --opt options/DMDP-FR_stage3_triple.yml \
-  --ckpt_path experiments/pretrained_models/dmdp_fr/dmdp_fr_stage3.pth \
-  --detection_model retinaface_resnet50 \
-  -w 0.5
-```
-
-Folder benchmark without saving restored images:
-
-```bash
-python inference_dmdp_fr.py \
-  -i datasets/faces/validation/lq \
-  --recursive_input \
-  --has_aligned \
-  --measure_speed \
-  --speed_no_save \
-  --opt options/DMDP-FR_stage3_triple.yml \
-  --ckpt_path experiments/pretrained_models/dmdp_fr/dmdp_fr_stage3.pth
-```
-
 ## Visualization And Evaluation
 
 Generate restored images, side-by-side comparisons, granularity maps, and metrics:

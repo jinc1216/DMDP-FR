@@ -1,6 +1,6 @@
 # DMDP-FR stage-2: multi-granularity code/route prediction under CodeFormer degradation.
 name: DMDP-FR_stage2_triple
-model_type: DMDP-FRModel
+model_type: DMDPFRModel
 num_gpu: 1
 manual_seed: 0
 
@@ -61,7 +61,7 @@ datasets:
 
     
 network_g:
-  type: DMDP-FR
+  type: DMDPFR
   grain_type: triple
   img_size: 512
   ch: 128
@@ -147,9 +147,9 @@ train:
     betas: [0.9, 0.99]
   scheduler:
     type: MultiStepLR
-    milestones: [100000, 150000]
+    milestones: [300000, 400000]
     gamma: 1
-  total_iter: 200000
+  total_iter: 500000
   warmup_iter: -1
   ema_decay: 0.995
   net_g_start_iter: 0
@@ -158,7 +158,7 @@ train:
   manual_seed: 0
 
 val:
-  val_freq: !!float 5e4
+  val_freq: !!float 1e5
   save_img: false
   metrics:
     psnr:
@@ -172,7 +172,7 @@ val:
 
 logger:
   print_freq: 100
-  save_checkpoint_freq: !!float 5e4
+  save_checkpoint_freq: !!float 1e5
   use_tb_logger: true
   wandb:
     project: ~

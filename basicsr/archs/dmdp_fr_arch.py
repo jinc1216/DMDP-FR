@@ -212,10 +212,10 @@ class DMDPFR(DMGQVAE):
                  fix_modules: Optional[List[str]] = None, stage1_model_path: Optional[str] = None,
                  vqgan_path: Optional[str] = None, max_position_tokens: int = 4096,
                  gamf_gamma_mode: str = "hard", gamf_gamma_temperature: float = 0.7,
-                 route_fine_bias: float = 0.0, route_median_bias: float = 0.0,
+                 route_fine_bias: float = 0.45, route_median_bias: float = 0.15,
                  fusion_detach_encoder: bool = True,
-                 gamf_residual_scale_init: float = 0.35, gamf_residual_scale_max: float = 1.5,
-                 gamf_gamma_floor: float = 0.15, gamf_use_highpass: bool = True,
+                 gamf_residual_scale_init: float = 0.45, gamf_residual_scale_max: float = 1.5,
+                 gamf_gamma_floor: float = 0.12, gamf_use_highpass: bool = True,
                  **dmgqvae_kwargs):
         dmgqvae_kwargs.setdefault("grain_type", "triple")
         dmgqvae_kwargs.setdefault("codebook_size", codebook_size)
@@ -734,6 +734,9 @@ class DMDPFR(DMGQVAE):
         if hasattr(block, "shift_head"):
             return block.shift_head[-1].weight
         return block.shift[-1].weight
+
+
+ARCH_REGISTRY._do_register("DMDP-FR", DMDPFR)
 
 
 # -----------------------------------------------------------------------------

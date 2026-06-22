@@ -1,6 +1,6 @@
 # DMDP-FR stage-3: grain-aware feature fusion with image-level fidelity losses.
 name: DMDP-FR_stage3_triple
-model_type: DMDP-FRModel
+model_type: DMDPFRModel
 num_gpu: 1
 manual_seed: 0
 
@@ -75,7 +75,7 @@ datasets:
     scale: 1
 
 network_g:
-  type: DMDP-FR
+  type: DMDPFR
   grain_type: triple
   img_size: 512
   ch: 128
@@ -100,16 +100,6 @@ network_g:
   n_layers: 9
   max_position_tokens: 4096
   connect_list: ['64', '128', '256']
-  # Stage-3 core enhanced fusion: route-aware Gamma and fidelity-controlled route bias.
-  gamf_gamma_mode: hard
-  gamf_gamma_temperature: 0.7
-  route_median_bias: 0.15
-  route_fine_bias: 0.45
-  fusion_detach_encoder: true
-  gamf_residual_scale_init: 0.45
-  gamf_residual_scale_max: 1.5
-  gamf_gamma_floor: 0.12
-  gamf_use_highpass: true
   fix_modules: ['quantize', 'decoder', 'post_quant_conv', 'grain_latent_adapters']
 
 network_vqgan:
