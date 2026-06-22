@@ -16,7 +16,6 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
 from basicsr.archs import build_network
-from basicsr.archs.dmdp_fr_arch import make_dual_targets, make_triple_targets
 from basicsr.utils import img2tensor, imwrite, tensor2img
 from basicsr.utils.options import ordered_yaml
 
@@ -33,31 +32,31 @@ REFERENCE_DATASET_METRICS = {"fid", "kid", "fid_dinov2"}
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Visualize DMDP-FR results and evaluate saved images with pyiqa."
+        description="Visualize DQCodeFormer results and evaluate saved images with pyiqa."
     )
     parser.add_argument("-i", "--input_path", type=str, default=None,
                         help="Input LQ image or folder. Required unless --skip_inference is set.")
     parser.add_argument("--gt_path", type=str, default=None,
                         help="GT image or folder for full-reference metrics and comparison images.")
-    parser.add_argument("-o", "--save_root", type=str, default="results/dmdp_fr_vis",
+    parser.add_argument("-o", "--save_root", type=str, default="results/dqcodeformer_vis",
                         help="Output root. Restored images are saved to <save_root>/restored.")
     parser.add_argument("--result_path", type=str, default=None,
                         help="Existing restored image folder for --skip_inference. Defaults to <save_root>/restored.")
     parser.add_argument("--skip_inference", action="store_true",
                         help="Skip model inference and only calculate pyiqa metrics from saved restored images.")
 
-    parser.add_argument("--opt", type=str, default="options/DMDP-FR_stage3_triple.yml",
-                        help="DMDP-FR option file. Its network_g section is used to build the model.")
+    parser.add_argument("--opt", type=str, default="options/DQCodeFormer_stage3_triple.yml",
+                        help="DQCodeFormer option file. Its network_g section is used to build the model.")
     parser.add_argument("--ckpt_path", type=str, default=None,
-                        help="DMDP-FR net_g checkpoint, for example experiments/.../models/net_g_latest.pth.")
+                        help="DQCodeFormer net_g checkpoint, for example experiments/.../models/net_g_latest.pth.")
 
     parser.add_argument("--img_size", type=int, default=None,
                         help="Resize inputs to this size. Defaults to network_g.img_size from --opt.")
     parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--w", type=float, default=None,
-                        help="Fidelity weight for DMDP-FR forward. Defaults to train.fidelity_weight from --opt.")
+                        help="Fidelity weight for DQCodeFormer forward. Defaults to train.fidelity_weight from --opt.")
     parser.add_argument("--adain", action="store_true",
-                        help="Enable adain=True in DMDP-FR forward.")
+                        help="Enable adain=True in DQCodeFormer forward.")
     parser.add_argument("--device", type=str, default=None,
                         help="Device string such as cuda, cuda:0, or cpu. Defaults to cuda if available.")
     parser.add_argument("--suffix", type=str, default=None,
@@ -67,15 +66,12 @@ def parse_args():
     parser.add_argument("--save_comparison", action="store_true",
                         help="Save side-by-side LQ/restored(/GT) images to <save_root>/comparison.")
     parser.add_argument("--save_gate_map", action="store_true",
-                        help="Save DMDP-FR latent granularity maps. Each 8x8 gate cell is rendered "
+                        help="Save DQCodeFormer latent granularity maps. Each 8x8 gate cell is rendered "
                              "as its assembled region on the full latent grid.")
     parser.add_argument("--save_gate_probs", action="store_true",
                         help="Also save per-grain gate probability heatmaps. Requires --save_gate_map.")
     parser.add_argument("--gate_overlay_alpha", type=float, default=0.45,
                         help="Alpha for blending latent granularity map over restored image.")
-    parser.add_argument("--save_code_error_map", action="store_true",
-                        help="Save GT/predicted code maps and code mismatch maps. Requires --gt_path and "
-                             "network_vqgan in --opt.")
 
     parser.add_argument("--metrics", type=str, default="",
                         help="Comma-separated pyiqa metrics, e.g. psnr,ssim,lpips,niqe. Empty means no evaluation.")
@@ -151,7 +147,7 @@ def infer_tensor_min_max(mean, std):
     )
 
 
-def build_dmdp_fr(opt, args, device):
+def build_dqcodeformer(opt, args, device):
     if args.ckpt_path is None:
         raise ValueError("--ckpt_path is required unless --skip_inference is set.")
 
@@ -190,249 +186,6 @@ def save_comparison_image(lq_img, restored_img, gt_path, save_path, img_size):
             panels.append(gt_img)
     comparison = np.concatenate(panels, axis=1)
     imwrite(comparison, str(save_path))
-
-
-def resize_bgr_to_size(img, out_size, interpolation=cv2.INTER_LINEAR):
-    out_w, out_h = out_size
-    if img.shape[1] == out_w and img.shape[0] == out_h:
-        return img
-    return cv2.resize(img, (out_w, out_h), interpolation=interpolation)
-
-
-def add_panel_label(img, label, label_h=34):
-    canvas = np.full((img.shape[0] + label_h, img.shape[1], 3), 255, dtype=np.uint8)
-    canvas[label_h:, :, :] = img
-    cv2.putText(
-        canvas,
-        label,
-        (10, 23),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.62,
-        (20, 20, 20),
-        1,
-        cv2.LINE_AA,
-    )
-    return canvas
-
-
-def make_labeled_row(panels):
-    labeled = [add_panel_label(img, label) for label, img in panels]
-    return np.concatenate(labeled, axis=1)
-
-
-def make_code_color_lut(num_codes):
-    ids = np.arange(max(int(num_codes), 1), dtype=np.uint32)
-    lut = np.stack([
-        (ids * 109 + 101) % 256,
-        (ids * 73 + 59) % 256,
-        (ids * 37 + 17) % 256,
-    ], axis=1).astype(np.uint8)
-    lut[0] = np.array([40, 40, 40], dtype=np.uint8)
-    return lut
-
-
-def tensor_map_to_numpy(tensor):
-    tensor = tensor.detach().long().cpu()
-    if tensor.dim() == 4 and tensor.shape[1] == 1:
-        tensor = tensor[:, 0]
-    if tensor.dim() == 3:
-        tensor = tensor[0]
-    if tensor.dim() != 2:
-        raise ValueError(f"Expected a 2D map or batched map, got shape {tuple(tensor.shape)}.")
-    return tensor.numpy()
-
-
-def render_code_map(code_map, out_size, codebook_size):
-    code_map = np.asarray(code_map, dtype=np.int64)
-    max_code = int(code_map.max()) if code_map.size else 0
-    lut_size = max(int(codebook_size), max_code + 1)
-    lut = make_code_color_lut(lut_size)
-    color = lut[np.clip(code_map, 0, lut_size - 1)]
-    return cv2.resize(color, out_size, interpolation=cv2.INTER_NEAREST)
-
-
-def render_error_map(error_map, out_size, valid_mask=None):
-    error_map = np.asarray(error_map, dtype=bool)
-    canvas = np.full((*error_map.shape, 3), (245, 245, 245), dtype=np.uint8)
-    if valid_mask is not None:
-        valid_mask = np.asarray(valid_mask, dtype=bool)
-        canvas[:, :, :] = (220, 220, 220)
-        canvas[valid_mask] = (245, 245, 245)
-        canvas[valid_mask & error_map] = (0, 0, 230)
-    else:
-        canvas[error_map] = (0, 0, 230)
-    return cv2.resize(canvas, out_size, interpolation=cv2.INTER_NEAREST)
-
-
-def masked_error_rate(error_map, valid_mask=None):
-    error_map = np.asarray(error_map, dtype=bool)
-    if valid_mask is None:
-        return float(error_map.mean()) if error_map.size else float("nan"), int(error_map.size)
-    valid_mask = np.asarray(valid_mask, dtype=bool)
-    denom = int(valid_mask.sum())
-    if denom == 0:
-        return float("nan"), 0
-    return float((error_map & valid_mask).sum() / denom), denom
-
-
-def get_code_stage_specs(pred):
-    if "median" in pred:
-        return [("coarse", "coarse"), ("median", "medium"), ("fine", "fine")]
-    return [("coarse", "coarse"), ("fine", "fine")]
-
-
-def build_code_targets(idx_gt, grain_gt, grain_type):
-    if grain_type == "triple":
-        return make_triple_targets(idx_gt, grain_gt)
-    if grain_type == "dual":
-        return make_dual_targets(idx_gt, grain_gt)
-    raise ValueError(f"Unsupported DQ grain_type for code error visualization: {grain_type}")
-
-
-def build_gt_vqgan(opt, device):
-    if "network_vqgan" not in opt:
-        raise ValueError("--save_code_error_map requires a network_vqgan section in the option file.")
-    vqgan = build_network(opt["network_vqgan"]).to(device)
-    vqgan.eval()
-    for param in vqgan.parameters():
-        param.requires_grad = False
-    return vqgan
-
-
-def save_code_error_stats(rows, save_root):
-    if not rows:
-        return
-    stats_path = Path(save_root) / "code_error_stats.csv"
-    fieldnames = ["image", "latent_h", "latent_w"]
-    extra_fields = sorted({key for row in rows for key in row.keys()} - set(fieldnames))
-    fieldnames.extend(extra_fields)
-    with open(stats_path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
-    print(f"Code error statistics saved to: {stats_path}")
-
-
-def save_code_error_visualizations(
-    net,
-    vqgan,
-    pred,
-    batch_idx,
-    lq_img,
-    gt_img,
-    gt_tensor,
-    restored_img,
-    save_stem,
-    code_dirs,
-    codebook_size,
-    grain_type,
-    device,
-):
-    if not hasattr(net, "logits_to_code_map"):
-        raise ValueError("--save_code_error_map requires a DMDP-FR network with logits_to_code_map().")
-
-    pred_single = {
-        key: value[batch_idx:batch_idx + 1]
-        for key, value in pred.items()
-        if torch.is_tensor(value)
-    }
-    with torch.no_grad():
-        idx_gt, grain_gt, _ = vqgan.encode_to_indices(gt_tensor.unsqueeze(0).to(device))
-        pred_final, pred_grain, _ = net.logits_to_code_map(pred_single)
-
-    idx_gt = idx_gt.long()
-    grain_gt = grain_gt.long()
-    pred_final = pred_final.long()
-    pred_grain = pred_grain.long()
-    targets = build_code_targets(idx_gt, grain_gt, grain_type)
-
-    out_size = (restored_img.shape[1], restored_img.shape[0])
-    gt_final_np = tensor_map_to_numpy(idx_gt)
-    pred_final_np = tensor_map_to_numpy(pred_final)
-    err_final_np = pred_final_np != gt_final_np
-    gt_grain_np = tensor_map_to_numpy(grain_gt)
-    pred_grain_np = tensor_map_to_numpy(pred_grain)
-    route_err_np = pred_grain_np != gt_grain_np
-
-    npz_payload = {
-        "gt_final_code": gt_final_np,
-        "pred_final_code": pred_final_np,
-        "final_selected_error": err_final_np.astype(np.uint8),
-        "gt_grain": gt_grain_np,
-        "pred_grain": pred_grain_np,
-        "route_error": route_err_np.astype(np.uint8),
-    }
-
-    stats = {
-        "image": f"{save_stem}.png",
-        "latent_h": int(gt_final_np.shape[0]),
-        "latent_w": int(gt_final_np.shape[1]),
-    }
-
-    final_gt_img = render_code_map(gt_final_np, out_size, codebook_size)
-    final_pred_img = render_code_map(pred_final_np, out_size, codebook_size)
-    final_err_img = render_error_map(err_final_np, out_size)
-    imwrite(final_gt_img, str(code_dirs["maps"] / f"{save_stem}_gt_final_selected_code.png"))
-    imwrite(final_pred_img, str(code_dirs["maps"] / f"{save_stem}_pred_final_selected_code.png"))
-    imwrite(final_err_img, str(code_dirs["errors"] / f"{save_stem}_final_selected_code_error.png"))
-    imwrite(render_error_map(route_err_np, out_size), str(code_dirs["errors"] / f"{save_stem}_route_error.png"))
-
-    final_rate, final_count = masked_error_rate(err_final_np)
-    route_rate, route_count = masked_error_rate(route_err_np)
-    stats["final_selected_error_rate"] = final_rate
-    stats["final_selected_count"] = final_count
-    stats["route_error_rate"] = route_rate
-    stats["route_count"] = route_count
-
-    stage_error_panels = []
-    for pred_key, out_name in get_code_stage_specs(pred_single):
-        pred_stage = pred_single[pred_key].argmax(dim=1).long()
-        gt_stage = targets[pred_key].long()
-        mask_stage = targets.get(f"mask_{pred_key}", None)
-
-        pred_stage_np = tensor_map_to_numpy(pred_stage)
-        gt_stage_np = tensor_map_to_numpy(gt_stage)
-        err_stage_np = pred_stage_np != gt_stage_np
-        mask_stage_np = tensor_map_to_numpy(mask_stage) if mask_stage is not None else None
-
-        gt_stage_img = render_code_map(gt_stage_np, out_size, codebook_size)
-        pred_stage_img = render_code_map(pred_stage_np, out_size, codebook_size)
-        err_stage_img = render_error_map(err_stage_np, out_size, valid_mask=mask_stage_np)
-        imwrite(gt_stage_img, str(code_dirs["maps"] / f"{save_stem}_gt_{out_name}_code.png"))
-        imwrite(pred_stage_img, str(code_dirs["maps"] / f"{save_stem}_pred_{out_name}_code.png"))
-        imwrite(err_stage_img, str(code_dirs["errors"] / f"{save_stem}_{out_name}_code_error.png"))
-
-        selected_rate, selected_count = masked_error_rate(err_stage_np, mask_stage_np)
-        all_rate, all_count = masked_error_rate(err_stage_np)
-        stats[f"{out_name}_error_rate"] = selected_rate
-        stats[f"{out_name}_selected_count"] = selected_count
-        stats[f"{out_name}_error_rate_all"] = all_rate
-        stats[f"{out_name}_count_all"] = all_count
-
-        npz_payload[f"gt_{out_name}_code"] = gt_stage_np
-        npz_payload[f"pred_{out_name}_code"] = pred_stage_np
-        npz_payload[f"{out_name}_error"] = err_stage_np.astype(np.uint8)
-        if mask_stage_np is not None:
-            npz_payload[f"{out_name}_valid_mask"] = mask_stage_np.astype(np.uint8)
-        stage_error_panels.append((f"{out_name.title()} Error", err_stage_img))
-
-    stage_error_panels.append(("Final Selected Error", final_err_img))
-    stage_summary = make_labeled_row(stage_error_panels)
-    imwrite(stage_summary, str(code_dirs["figures"] / f"{save_stem}_multiscale_code_error_figure.png"))
-
-    lq_panel = resize_bgr_to_size(lq_img, out_size)
-    gt_panel = resize_bgr_to_size(gt_img, out_size)
-    final_figure = make_labeled_row([
-        ("LQ input", lq_panel),
-        ("GT code map", final_gt_img),
-        ("Predicted code map", final_pred_img),
-        ("Error map", final_err_img),
-        ("Restored image", restored_img),
-        ("GT", gt_panel),
-    ])
-    imwrite(final_figure, str(code_dirs["figures"] / f"{save_stem}_final_selected_code_error_figure.png"))
-    np.savez_compressed(code_dirs["raw"] / f"{save_stem}_code_maps.npz", **npz_payload)
-    return stats
 
 
 def get_gate_class_names(num_classes):
@@ -562,7 +315,7 @@ def render_latent_granularity_map(gate_idx, latent_shape, out_size, colors, bord
 
 def save_latent_granularity_visualizations(pred, batch_idx, restored_img, save_stem, gate_dirs, alpha):
     if not isinstance(pred, dict) or "gate" not in pred:
-        raise ValueError("DMDP-FR latent granularity visualization requires pred['gate'].")
+        raise ValueError("DQCodeFormer latent granularity visualization requires pred['gate'].")
 
     gate_tensor = pred["gate"][batch_idx].detach().float().cpu()
     gate_prob = gate_tensor if pred.get("gate_is_prob", False) else torch.softmax(gate_tensor, dim=0)
@@ -652,14 +405,9 @@ def run_inference(opt, args, device):
     fidelity_weight = args.w
     if fidelity_weight is None:
         fidelity_weight = float(opt.get("train", {}).get("fidelity_weight", 1.0))
-    network_type = opt["network_g"].get("type", "DMDPFR")
+    network_type = opt["network_g"].get("type", "DQCodeFormer")
 
-    net = build_dmdp_fr(opt, args, device)
-    vqgan = None
-    code_error_dirs = None
-    code_error_stats = []
-    codebook_size = int(opt["network_g"].get("codebook_size", opt.get("network_vqgan", {}).get("codebook_size", 1024)))
-    grain_type = opt["network_g"].get("grain_type", "triple")
+    net = build_dqcodeformer(opt, args, device)
     restored_dir = Path(args.save_root) / "restored"
     restored_dir.mkdir(parents=True, exist_ok=True)
     comparison_dir = Path(args.save_root) / "comparison"
@@ -678,22 +426,8 @@ def run_inference(opt, args, device):
         if gate_dirs["prob"] is not None:
             gate_dirs["prob"].mkdir(parents=True, exist_ok=True)
     gt_index = build_gt_index(args.gt_path, recursive=args.recursive)
-    if args.save_code_error_map:
-        if args.gt_path is None:
-            raise ValueError("--save_code_error_map requires --gt_path.")
-        if not hasattr(net, "logits_to_code_map"):
-            raise ValueError("--save_code_error_map currently supports DMDP-FR inference only.")
-        vqgan = build_gt_vqgan(opt, device)
-        code_error_dirs = {
-            "maps": Path(args.save_root) / "code_maps",
-            "errors": Path(args.save_root) / "code_error_maps",
-            "figures": Path(args.save_root) / "code_error_figures",
-            "raw": Path(args.save_root) / "code_maps_npz",
-        }
-        for path in code_error_dirs.values():
-            path.mkdir(parents=True, exist_ok=True)
 
-    print(f"Running DMDP-FR inference on {len(input_paths)} images.")
+    print(f"Running DQCodeFormer inference on {len(input_paths)} images.")
     print(f"Save restored images to: {restored_dir}")
     for start in tqdm(range(0, len(input_paths), args.batch_size), desc="Inference"):
         batch_paths = input_paths[start:start + args.batch_size]
@@ -715,38 +449,16 @@ def run_inference(opt, args, device):
             save_path = restored_dir / save_name
             imwrite(restored_img, str(save_path))
 
-            gt_path = gt_index.get(basename)
             if args.save_comparison:
+                gt_path = gt_index.get(basename)
                 save_comparison_image(lq_imgs[i], restored_img, gt_path, comparison_dir / save_name, img_size)
             if args.save_gate_map:
                 gate_stats.append(save_latent_granularity_visualizations(
                     pred, i, restored_img, save_stem, gate_dirs, args.gate_overlay_alpha))
-            if args.save_code_error_map:
-                if gt_path is None:
-                    raise FileNotFoundError(
-                        f"No GT image matched input {img_path.name}; expected a GT file with stem {basename}."
-                    )
-                gt_img, gt_tensor = preprocess_image(gt_path, img_size, mean, std)
-                code_error_stats.append(save_code_error_visualizations(
-                    net=net,
-                    vqgan=vqgan,
-                    pred=pred,
-                    batch_idx=i,
-                    lq_img=lq_imgs[i],
-                    gt_img=gt_img,
-                    gt_tensor=gt_tensor,
-                    restored_img=restored_img,
-                    save_stem=save_stem,
-                    code_dirs=code_error_dirs,
-                    codebook_size=codebook_size,
-                    grain_type=grain_type,
-                    device=device,
-                ))
 
         if device.type == "cuda":
             torch.cuda.empty_cache()
     save_latent_granularity_stats(gate_stats, args.save_root)
-    save_code_error_stats(code_error_stats, args.save_root)
     return restored_dir
 
 
@@ -870,8 +582,6 @@ def main():
     args = parse_args()
     if args.batch_size < 1:
         raise ValueError(f"--batch_size must be >= 1, got {args.batch_size}.")
-    if args.skip_inference and args.save_code_error_map:
-        raise ValueError("--save_code_error_map requires model inference; remove --skip_inference.")
     if args.skip_inference:
         if args.result_path is None:
             args.result_path = str(Path(args.save_root) / "restored")
@@ -888,3 +598,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

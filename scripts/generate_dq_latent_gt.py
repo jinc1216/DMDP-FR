@@ -146,7 +146,7 @@ if __name__ == "__main__":
     parser.add_argument("--grain_type", type=str, default="triple", choices=["dual", "triple"])
     parser.add_argument("--img_size", type=int, default=512)
     parser.add_argument("--codebook_size", type=int, default=1024)
-    parser.add_argument("--batch_size", type=int, default=4)
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--no_hflip", action="store_true", help="Only save original-image latent codes.")
     args = parser.parse_args()
 
@@ -172,3 +172,4 @@ if __name__ == "__main__":
     latent_save_path = os.path.join(args.save_root, f"latent_gt_dq_{args.grain_type}_code{args.codebook_size}.pth")
     torch.save(latent, latent_save_path)
     print(f"\nSaved {len(img_paths)} DQ latent GT records to {latent_save_path}")
+
