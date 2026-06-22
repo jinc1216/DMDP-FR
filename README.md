@@ -61,7 +61,7 @@ conda activate dmdp-fr
 pip install -r requirements.txt
 ```
 
-This compact repository is designed to run from the repository root. No package installation step is required.
+This repository is designed to run from the repository root. No package installation step is required.
 
 ## Dataset Layout
 
@@ -188,20 +188,31 @@ python scripts/generate_dq_latent_gt.py \
   -o experiments/pretrained_models/dqvae
 ```
 
-## Repository Contents
+[//]: # (## Repository Contents)
 
-```text
-basicsr/
-  archs/dmdp_fr_arch.py      # DMDP-FR network and target builders
-  archs/dqvae_arch.py        # Dynamic multi-granularity DQ-VAE prior
-  models/dmdp_fr_model.py    # Stage-II/III training model
-  models/dqvae_model.py      # Stage-I prior training model
-facelib/                     # face detection, alignment, parsing, paste-back
-options/                     # DMDP-FR training configs
-scripts/                     # latent GT generation and visualization/evaluation
-inference_dmdp_fr.py         # inference entry point
-```
+[//]: # ()
+[//]: # (```text)
 
-## License
+[//]: # (basicsr/)
 
-This repository preserves the license from the original CodeFormer/BasicSR-derived implementation. See `LICENSE`.
+[//]: # (  archs/dmdp_fr_arch.py      # DMDP-FR network and target builders)
+
+[//]: # (  archs/dqvae_arch.py        # Dynamic multi-granularity DQ-VAE prior)
+
+[//]: # (  models/dmdp_fr_model.py    # Stage-II/III training model)
+
+[//]: # (  models/dqvae_model.py      # Stage-I prior training model)
+
+[//]: # (facelib/                     # face detection, alignment, parsing, paste-back)
+
+[//]: # (options/                     # DMDP-FR training configs)
+
+[//]: # (scripts/                     # latent GT generation and visualization/evaluation)
+
+[//]: # (inference_dmdp_fr.py         # inference entry point)
+
+[//]: # (```)
+
+[//]: # (## License)
+
+[//]: # (This repository preserves the license from the original CodeFormer/BasicSR-derived implementation. See `LICENSE`.)
