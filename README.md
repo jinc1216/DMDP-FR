@@ -263,45 +263,7 @@ python scripts/visualize_eval_dmdp_fr.py \
   --metrics psnr,ssim,lpips,niqe
 ```
 
-Precompute DMGQ latent GT codes for faster Stage-II/III training:
-
-```bash
-python scripts/generate_dmgq_latent_gt.py \
-  -i datasets/ffhq/ffhq_512 \
-  --opt options/DMDP-FR_stage1_triple.yml \
-  --ckpt_path experiments/pretrained_models/dmgqvae/dmgqvae_stage1_triple.pth \
-  -o experiments/pretrained_models/dmgqvae
-```
-
 ## Acknowledgement
 
 We thank the authors and contributors of [BasicSR](https://github.com/XPixelGroup/BasicSR), [CodeFormer](https://github.com/sczhou/CodeFormer), [VQFR](https://github.com/TencentARC/VQFR), and [DAEFR](https://github.com/LIAGM/DAEFR) for making their code, models, and project resources publicly available.
 
-[//]: # (## Repository Contents)
-
-[//]: # ()
-[//]: # (```text)
-
-[//]: # (basicsr/)
-
-[//]: # (  archs/dmdp_fr_arch.py      # DMDP-FR network and target builders)
-
-[//]: # (  archs/dmgqvae_arch.py        # Dynamic multi-granularity DMGQ-VAE prior)
-
-[//]: # (  models/dmdp_fr_model.py    # Stage-II/III training model)
-
-[//]: # (  models/dmgqvae_model.py      # Stage-I prior training model)
-
-[//]: # (facelib/                     # face detection, alignment, parsing, paste-back)
-
-[//]: # (options/                     # DMDP-FR training configs)
-
-[//]: # (scripts/                     # latent GT generation and visualization/evaluation)
-
-[//]: # (inference_dmdp_fr.py         # inference entry point)
-
-[//]: # (```)
-
-[//]: # (## License)
-
-[//]: # (This repository preserves the license from the original CodeFormer/BasicSR-derived implementation. See `LICENSE`.)
