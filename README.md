@@ -115,16 +115,6 @@ datasets/
       ...
 ```
 
-The default training configs read this folder through:
-
-| Config | Training dataset type | Training path field |
-| --- | --- | --- |
-| `options/DMDP-FR_stage1_triple.yml` | `FFHQBlindDataset` | `datasets.train.dataroot_gt: datasets/ffhq/ffhq_512` |
-| `options/DMDP-FR_stage2_triple.yml` | `FFHQBlindDataset` | `datasets.train.dataroot_gt: datasets/ffhq/ffhq_512` |
-| `options/DMDP-FR_stage3_triple.yml` | `FFHQBlindJointDataset` | `datasets.train.dataroot_gt: datasets/ffhq/ffhq_512` |
-
-Stage-I trains the dynamic multi-granularity DMGQ-VAE prior from HQ faces. Stage-II and Stage-III synthesize LQ inputs online from the same HQ training set using the degradation settings in the YAML files.
-
 ### Validation Dataset
 
 Please put the following validation and testing datasets under the `./datasets/` folder.
@@ -174,16 +164,6 @@ datasets/
           000002.png
           ...
 ```
-
-The default validation configs use:
-
-| Config | Validation dataset type | LQ path | GT path |
-| --- | --- | --- | --- |
-| `options/DMDP-FR_stage1_triple.yml` | `PairedImageDataset` | `datasets/faces/validation/gt` | `datasets/faces/validation/gt` |
-| `options/DMDP-FR_stage2_triple.yml` | `PairedImageDataset` | `datasets/faces/validation/lq` | `datasets/faces/validation/gt` |
-| `options/DMDP-FR_stage3_triple.yml` | `PairedImageDataset` | `datasets/faces/validation/lq` | `datasets/faces/validation/gt` |
-
-Stage-I validates reconstruction quality by using HQ images as both input and target. Stage-II and Stage-III validate restoration quality from paired LQ/HQ images.
 
 ### Optional Latent GT Cache
 
