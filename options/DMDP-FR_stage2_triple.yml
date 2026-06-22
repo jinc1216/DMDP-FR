@@ -1,6 +1,6 @@
 # DMDP-FR stage-2: multi-granularity code/route prediction under CodeFormer degradation.
 name: DMDP-FR_stage2_triple
-model_type: DMDPFRModel
+model_type: DMDP-FRModel
 num_gpu: 1
 manual_seed: 0
 
@@ -12,13 +12,23 @@ datasets:
     filename_tmpl: '{}'
     io_backend:
       type: disk
-
+      
     in_size: 512
     gt_size: 512
     mean: [0.5, 0.5, 0.5]
     std: [0.5, 0.5, 0.5]
     use_hflip: true
     use_corrupt: true
+    
+    # blur_kernel_size: 41
+    # use_motion_kernel: false
+    # motion_kernel_prob: 0.001
+    # kernel_list: ['iso', 'aniso']
+    # kernel_prob: [0.5, 0.5]
+    # blur_sigma: [1, 15]
+    # downsample_range: [4, 30]
+    # noise_range: [0, 20]
+    # jpeg_range: [30, 80]
 
     blur_kernel_size: 41
     use_motion_kernel: false
@@ -30,12 +40,13 @@ datasets:
     noise_range: [0, 20]
     jpeg_range: [30, 100]
 
-    latent_gt_path: ~
-
+    latent_gt_path: experiments/pretrained_models/dmgqvae/latent_gt_dmgq_triple_code1024.pth
+    
     num_worker_per_gpu: 4
-    batch_size_per_gpu: 2
+    batch_size_per_gpu: 4
     dataset_enlarge_ratio: 100
-    prefetch_mode: ~
+    prefetch_mode: cpu
+    num_prefetch_queue: 64
 
   val:
     name: CelebA-HQ-512
@@ -48,8 +59,9 @@ datasets:
     std: [0.5, 0.5, 0.5]
     scale: 1
 
+    
 network_g:
-  type: DMDPFR
+  type: DMDP-FR
   grain_type: triple
   img_size: 512
   ch: 128
@@ -79,10 +91,10 @@ network_g:
   max_position_tokens: 4096
   connect_list: ['64', '128', '256']
   fix_modules: ['quantize', 'decoder', 'post_quant_conv', 'grain_latent_adapters']
-  stage1_model_path: './experiments/pretrained_models/dqvae/dqvae_stage1_triple.pth'
+  # stage1_model_path: experiments/20260602_111953_DMDP-FR_stage1_triple/models/net_g_latest.pth
 
 network_vqgan:
-  type: DQDynamicVQVAE
+  type: DMGQVAE
   grain_type: triple
   img_size: 512
   ch: 128
@@ -106,10 +118,10 @@ network_vqgan:
   decoder_position_type: fourier+learned
   codebook_size: 1024
   codebook_dim: 256
-  model_path: './experiments/pretrained_models/dqvae/dqvae_stage1_triple.pth'
+  model_path: experiments/20260602_111953_DMDP-FR_stage1_triple/models/net_g_latest.pth
 
 path:
-  pretrain_network_g: ~
+  pretrain_network_g: experiments/20260611_201026_DMDP-FR_stage2_triple/models/net_g_latest.pth
   param_key_g: params_ema
   strict_load_g: false
   resume_state: ~
@@ -117,7 +129,7 @@ path:
 train:
   use_amp: true
   amp_dtype: bfloat16
-  grad_accum_steps: 4
+  grad_accum_steps: 2
   use_hq_feat_loss: true
   feat_loss_weight: 1.0
 #  code_loss_weight: 0.3
@@ -135,9 +147,9 @@ train:
     betas: [0.9, 0.99]
   scheduler:
     type: MultiStepLR
-    milestones: [400000, 450000]
-    gamma: 0.5
-  total_iter: 500000
+    milestones: [100000, 150000]
+    gamma: 1
+  total_iter: 200000
   warmup_iter: -1
   ema_decay: 0.995
   net_g_start_iter: 0
@@ -146,8 +158,8 @@ train:
   manual_seed: 0
 
 val:
-  val_freq: !!float 1e4
-  save_img: true
+  val_freq: !!float 5e4
+  save_img: false
   metrics:
     psnr:
       type: calculate_psnr
@@ -160,7 +172,7 @@ val:
 
 logger:
   print_freq: 100
-  save_checkpoint_freq: !!float 1e4
+  save_checkpoint_freq: !!float 5e4
   use_tb_logger: true
   wandb:
     project: ~

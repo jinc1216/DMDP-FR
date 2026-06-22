@@ -1,7 +1,7 @@
 # DMDP-FR stage-1 (triple {8,16,32})
-# Extension of DQ dual to triple granularity, following DynamicVectorQuantization's triple design.
+# Extension of DMGQ dual to triple granularity, following DynamicVectorQuantization's triple design.
 name: DMDP-FR_stage1_triple
-model_type: DQVAEDynamicModel
+model_type: DMGQVAEModel
 num_gpu: 1
 manual_seed: 0
 
@@ -36,10 +36,10 @@ datasets:
     std: [0.5, 0.5, 0.5]
     scale: 1
 
-
+    
 # network structures
 network_g:
-  type: DQDynamicVQVAE
+  type: DMGQVAE
   grain_type: triple
   img_size: 512
   ch: 128
@@ -68,7 +68,7 @@ network_g:
   quant_sample_temperature: 0.0
 
 network_d:
-  type: UNetDiscriminatorSN
+  type: UNetDiscriminatorSN 
   num_in_ch: 3
 
 path:
@@ -85,7 +85,7 @@ train:
   grad_accum_steps: 4
   codebook_weight: 1.0
   pixelloss_weight: 1.0
-  disc_weight: 0.4
+  disc_weight: 0.8
   perceptual_weight: 1.0
   lpips_weight_path: weights/lpips/vgg.pth
   gan_opt:
@@ -100,7 +100,7 @@ train:
     median_grain_size: 16 # 512 / 32 median grid
     max_grain_size: 32    # 512 / 16 fine grid
 
-
+    
   optim_g:
     type: Adam
     lr: !!float 1e-4
@@ -115,19 +115,19 @@ train:
     type: MultiStepLR
     milestones: [50000, 100000, 150000, 200000, 250000, 300000, 350000]
     gamma: 1
-
-  total_iter: 1600000
-
+    
+  total_iter: 400000
+  
   warmup_iter: -1
   ema_decay: 0.995
-
+  
   net_g_start_iter: 0
   net_d_iters: 1
   net_d_start_iter: 30001
   manual_seed: 0
 
 val:
-  val_freq: !!float 4e4
+  val_freq: !!float 1e5
   save_img: false
   metrics:
     psnr:
@@ -141,7 +141,7 @@ val:
 
 logger:
   print_freq: 100
-  save_checkpoint_freq: !!float 4e4
+  save_checkpoint_freq: !!float 1e5
   use_tb_logger: true
   wandb:
     project: ~

@@ -1,0 +1,300 @@
+name: DMDP-FR_stage3_finetune_realworld_fid_musiq
+model_type: DMDP-FRModel
+num_gpu: 1
+manual_seed: 0
+datasets:
+  train:
+    name: FFHQ
+    type: FFHQBlindJointDataset
+    dataroot_gt: datasets/ffhq/ffhq_512
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+    in_size: 512
+    gt_size: 512
+    mean:
+    - 0.5
+    - 0.5
+    - 0.5
+    std:
+    - 0.5
+    - 0.5
+    - 0.5
+    use_hflip: true
+    use_corrupt: true
+    blur_kernel_size: 41
+    use_motion_kernel: false
+    motion_kernel_prob: 0.001
+    kernel_list:
+    - iso
+    - aniso
+    kernel_prob:
+    - 0.5
+    - 0.5
+    blur_sigma:
+    - 0.2
+    - 14
+    downsample_range:
+    - 1.2
+    - 22
+    noise_range:
+    - 0
+    - 30
+    jpeg_range:
+    - 25
+    - 95
+    # blur_sigma: [0.2, 10]
+    # downsample_range: [1.0, 14]
+    # noise_range: [0, 15]
+    # jpeg_range: [40, 95]
+    
+    blur_sigma_large:
+    - 2
+    - 24
+    downsample_range_large:
+    - 8
+    - 40
+    noise_range_large:
+    - 0
+    - 35
+    jpeg_range_large:
+    - 15
+    - 85
+    latent_gt_path: experiments/pretrained_models/dmgqvae/latent_gt_dmgq_triple_code1024.pth
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 4
+    dataset_enlarge_ratio: 100
+    prefetch_mode: cpu
+    color_jitter_prob: 0.3
+    color_jitter_shift: 20
+    color_jitter_pt_prob: 0.2
+    # color_jitter_prob: 0.0
+    # color_jitter_shift: 0
+    # color_jitter_pt_prob: 0.0
+    brightness:
+    - 0.85
+    - 1.15
+    contrast:
+    - 0.8
+    - 1.25
+    saturation:
+    - 0.75
+    - 1.25
+    hue:
+    - -0.03
+    - 0.03
+    gray_prob: 0.08
+    
+  val:
+    name: CelebA-HQ-512
+    type: PairedImageDataset
+    dataroot_lq: datasets/faces/validation/lq
+    dataroot_gt: datasets/faces/validation/gt
+    io_backend:
+      type: disk
+    mean: [0.5, 0.5, 0.5]
+    std: [0.5, 0.5, 0.5]
+    scale: 1
+    
+network_g:
+  type: DMDP-FR
+  grain_type: triple
+  img_size: 512
+  ch: 128
+  ch_mult:
+  - 1
+  - 1
+  - 2
+  - 2
+  - 4
+  - 4
+  - 4
+  num_res_blocks: 2
+  attn_resolutions:
+  - 8
+  - 16
+  - 32
+  in_channels: 3
+  z_channels: 256
+  router_config:
+    num_channels: 256
+    normalization_type: group-32
+    gate_type: 2layer-fc-SiLu
+  decoder_ch_mult:
+  - 1
+  - 1
+  - 2
+  - 2
+  - 4
+  latent_size: 32
+  decoder_attn_resolutions:
+  - 32
+  decoder_position_type: fourier+learned
+  codebook_size: 1024
+  codebook_dim: 256
+  dim_embd: 512
+  n_head: 8
+  n_layers: 9
+  max_position_tokens: 4096
+  connect_list:
+  - '64'
+  - '128'
+  - '256'
+  gamf_gamma_mode: hard
+  gamf_gamma_temperature: 0.7
+  # route_median_bias: 0.15
+  # route_fine_bias: 0.5
+  route_median_bias: 0.05
+  route_fine_bias: 0.15
+  fusion_detach_encoder: true
+  # gamf_residual_scale_init: 0.45
+  # gamf_residual_scale_max: 1.5
+  # gamf_gamma_floor: 0.12
+  gamf_residual_scale_init: 0.45
+  gamf_residual_scale_max: 0.80
+  gamf_gamma_floor: 0.05
+  gamf_use_highpass: true
+  fix_modules:
+  - quantize
+  - decoder
+  - post_quant_conv
+  - grain_latent_adapters
+network_vqgan:
+  type: DMGQVAE
+  grain_type: triple
+  img_size: 512
+  ch: 128
+  ch_mult:
+  - 1
+  - 1
+  - 2
+  - 2
+  - 4
+  - 4
+  - 4
+  num_res_blocks: 2
+  attn_resolutions:
+  - 8
+  - 16
+  - 32
+  in_channels: 3
+  z_channels: 256
+  router_config:
+    num_channels: 256
+    normalization_type: group-32
+    gate_type: 2layer-fc-SiLu
+  decoder_ch_mult:
+  - 1
+  - 1
+  - 2
+  - 2
+  - 4
+  latent_size: 32
+  decoder_attn_resolutions:
+  - 32
+  decoder_position_type: fourier+learned
+  codebook_size: 1024
+  codebook_dim: 256
+  model_path: ./experiments/pretrained_models/dmgqvae/dmgqvae_stage1_triple.pth
+network_d:
+  type: UNetDiscriminatorSN
+  num_in_ch: 3
+path:
+  pretrain_network_g: experiments/20260618_005627_DMDP-FR_stage3_finetune_realworld_fid_musiq/models/net_g_latest.pth
+  param_key_g: params_ema
+  strict_load_g: true
+  pretrain_network_d: experiments/20260618_005627_DMDP-FR_stage3_finetune_realworld_fid_musiq/models/net_d_latest.pth
+  strict_load_d: true
+  resume_state: ~
+train:
+  use_amp: true
+  amp_dtype: bfloat16
+  grad_accum_steps: 2
+  use_hq_feat_loss: true
+  feat_loss_weight: 0.1
+  code_loss_weight_coarse: 0.02
+  code_loss_weight_median: 0.06
+  code_loss_weight_fine: 0.2
+  # code_loss_weight_coarse: 0.01
+  # code_loss_weight_median: 0.03
+  # code_loss_weight_fine: 0.1
+  
+  gate_loss_weight: 0.12
+  encoder_gate_loss_weight: 0.05
+  # gate_loss_weight: 0.05
+  # encoder_gate_loss_weight: 0.02
+  
+  scale_adaptive_gan_weight: 0.1
+  supervise_all_codes: true
+  reset_stage3_fusion: false
+  fidelity_weight: 0.50
+  fix_generator: true
+  use_large_de_train: false
+  small_de_w1_until_iter: 50000
+  large_de_start_iter: 80000
+  large_de_only_until_iter: 120000
+  large_de_mixed_interval: 15
+  optim_g:
+    type: Adam
+    lr: 2.0e-05
+    weight_decay: 0
+    betas:
+    - 0.9
+    - 0.99
+  optim_d:
+    type: Adam
+    lr: 5.0e-05
+    weight_decay: 0
+    betas:
+    - 0.9
+    - 0.99
+  scheduler:
+    type: CosineAnnealingRestartLR
+    periods:
+    - 15000
+    restart_weights:
+    - 1
+    eta_min: 1.0e-06
+  total_iter: 15000
+  warmup_iter: -1
+  ema_decay: 0.999
+  pixel_opt:
+    type: L1Loss
+    loss_weight: 1.0
+    reduction: mean
+  perceptual_opt:
+    type: LPIPSLoss
+    loss_weight: 0.5
+    use_input_norm: true
+    range_norm: true
+  gan_opt:
+    type: GANLoss
+    gan_type: hinge
+    loss_weight: 1.0
+  net_g_start_iter: 0
+  net_d_iters: 1
+  net_d_start_iter: 5001
+  manual_seed: 0
+val:
+  val_freq: 5000.0
+  save_img: false
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 4
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 4
+      test_y_channel: false
+logger:
+  print_freq: 100
+  save_checkpoint_freq: 5000.0
+  use_tb_logger: true
+  wandb:
+    project: null
+    resume_id: null
+dist_params:
+  backend: nccl
+  port: 29434
+find_unused_parameters: true

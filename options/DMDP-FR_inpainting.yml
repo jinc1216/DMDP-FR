@@ -1,6 +1,6 @@
 # DMDP-FR inpainting: mask corruption with image-level fidelity losses.
 name: DMDP-FR_inpainting
-model_type: DMDPFRModel
+model_type: DMDP-FRModel
 num_gpu: 1
 manual_seed: 0
 
@@ -28,9 +28,20 @@ datasets:
     dataset_enlarge_ratio: 100
     prefetch_mode: ~
 
+#  val:
+#    name: CelebA-HQ-512
+#    type: PairedImageDataset
+#    dataroot_lq: datasets/faces/validation/lq
+#    dataroot_gt: datasets/faces/validation/gt
+#    io_backend:
+#      type: disk
+#    mean: [0.5, 0.5, 0.5]
+#    std: [0.5, 0.5, 0.5]
+#    scale: 1
+
 # network structures
 network_g:
-  type: DMDPFR
+  type: DMDP-FR
   grain_type: triple
   img_size: 512
   ch: 128
@@ -55,10 +66,10 @@ network_g:
   max_position_tokens: 4096
   connect_list: ['64', '128', '256']
   fix_modules: ['quantize', 'decoder', 'post_quant_conv']
-  stage1_model_path: './experiments/pretrained_models/dqvae/dqvae_stage1_triple.pth'
+  stage1_model_path: './experiments/pretrained_models/dmgqvae/dmgqvae_stage1_triple.pth'
 
 network_vqgan:
-  type: DQDynamicVQVAE
+  type: DMGQVAE
   grain_type: triple
   img_size: 512
   ch: 128
@@ -77,7 +88,7 @@ network_vqgan:
   decoder_position_type: fourier+learned
   codebook_size: 1024
   codebook_dim: 256
-  model_path: './experiments/pretrained_models/dqvae/dqvae_stage1_triple.pth'
+  model_path: './experiments/pretrained_models/dmgqvae/dmgqvae_stage1_triple.pth'
 
 network_d:
   type: UNetDiscriminatorSN

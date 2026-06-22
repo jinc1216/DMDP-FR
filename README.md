@@ -1,6 +1,6 @@
 # DMDP-FR
 
-Implementation of **DMDP-FR: Dynamic Multi-Granularity Discrete Prior Representation for Blind Face Restoration**. The repository keeps only the code path needed by DMDP-FR: dynamic DQ-VAE prior learning, coarse-to-fine code prediction, granularity-aware fusion, training configs, inference, and visualization/evaluation utilities.
+Implementation of **DMDP-FR: Dynamic Multi-Granularity Discrete Prior Representation for Blind Face Restoration**. The repository keeps only the code path needed by DMDP-FR: dynamic DMGQ-VAE prior learning, coarse-to-fine code prediction, granularity-aware fusion, training configs, inference, and visualization/evaluation utilities.
 
 [//]: # (> Note: the Python registry names use `DMDPFR` and `DMDPFRModel` because Python identifiers cannot contain `-`. User-facing files, commands, and documentation use the paper name `DMDP-FR`.)
 
@@ -110,7 +110,7 @@ The default training configs read this folder through:
 | `options/DMDP-FR_stage2_triple.yml` | `FFHQBlindDataset` | `datasets.train.dataroot_gt: datasets/ffhq/ffhq_512` |
 | `options/DMDP-FR_stage3_triple.yml` | `FFHQBlindJointDataset` | `datasets.train.dataroot_gt: datasets/ffhq/ffhq_512` |
 
-Stage-I trains the dynamic multi-granularity DQ-VAE prior from HQ faces. Stage-II and Stage-III synthesize LQ inputs online from the same HQ training set using the degradation settings in the YAML files.
+Stage-I trains the dynamic multi-granularity DMGQ-VAE prior from HQ faces. Stage-II and Stage-III synthesize LQ inputs online from the same HQ training set using the degradation settings in the YAML files.
 
 ### Validation Dataset
 
@@ -174,16 +174,16 @@ Stage-I validates reconstruction quality by using HQ images as both input and ta
 
 ### Optional Latent GT Cache
 
-Stage-II and Stage-III can either generate DQ latent supervision online from `network_vqgan`, or read precomputed latent codes by setting `datasets.train.latent_gt_path` in the YAML config.
+Stage-II and Stage-III can either generate DMGQ latent supervision online from `network_vqgan`, or read precomputed latent codes by setting `datasets.train.latent_gt_path` in the YAML config.
 
 Generate the cache with:
 
 ```bash
-python scripts/generate_dq_latent_gt.py \
+python scripts/generate_dmgq_latent_gt.py \
   -i datasets/ffhq/ffhq_512 \
   --opt options/DMDP-FR_stage1_triple.yml \
-  --ckpt_path experiments/pretrained_models/dqvae/dqvae_stage1_triple.pth \
-  -o experiments/pretrained_models/dqvae
+  --ckpt_path experiments/pretrained_models/dmgqvae/dmgqvae_stage1_triple.pth \
+  -o experiments/pretrained_models/dmgqvae
 ```
 
 Then set, for example:
@@ -191,25 +191,25 @@ Then set, for example:
 ```yaml
 datasets:
   train:
-    latent_gt_path: experiments/pretrained_models/dqvae/latent_gt_dq_triple_code1024.pth
+    latent_gt_path: experiments/pretrained_models/dmgqvae/latent_gt_dmgq_triple_code1024.pth
 ```
 
 ## Checkpoint Layout
 
 ```text
 experiments/pretrained_models/
-  dqvae/dqvae_stage1_triple.pth
+  dmgqvae/dmgqvae_stage1_triple.pth
   dmdp_fr_stage2/net_g_latest.pth
   dmdp_fr/dmdp_fr_stage3.pth
 weights/
   lpips/vgg.pth
 ```
 
-Stage-2 and Stage-3 use the DQ-VAE prior checkpoint through `stage1_model_path` and `network_vqgan.model_path`.
+Stage-2 and Stage-3 use the DMGQ-VAE prior checkpoint through `stage1_model_path` and `network_vqgan.model_path`.
 
 ## Training
 
-Train the triple-granularity DQ-VAE prior:
+Train the triple-granularity DMGQ-VAE prior:
 
 ```bash
 python basicsr/train.py -opt options/DMDP-FR_stage1_triple.yml
@@ -300,14 +300,14 @@ python scripts/visualize_eval_dmdp_fr.py \
   --metrics psnr,ssim,lpips,niqe
 ```
 
-Precompute DQ latent GT codes for faster Stage-II/III training:
+Precompute DMGQ latent GT codes for faster Stage-II/III training:
 
 ```bash
-python scripts/generate_dq_latent_gt.py \
+python scripts/generate_dmgq_latent_gt.py \
   -i datasets/ffhq/ffhq_512 \
   --opt options/DMDP-FR_stage1_triple.yml \
-  --ckpt_path experiments/pretrained_models/dqvae/dqvae_stage1_triple.pth \
-  -o experiments/pretrained_models/dqvae
+  --ckpt_path experiments/pretrained_models/dmgqvae/dmgqvae_stage1_triple.pth \
+  -o experiments/pretrained_models/dmgqvae
 ```
 
 ## Acknowledgement
@@ -323,11 +323,11 @@ We thank the authors and contributors of [BasicSR](https://github.com/XPixelGrou
 
 [//]: # (  archs/dmdp_fr_arch.py      # DMDP-FR network and target builders)
 
-[//]: # (  archs/dqvae_arch.py        # Dynamic multi-granularity DQ-VAE prior)
+[//]: # (  archs/dmgqvae_arch.py        # Dynamic multi-granularity DMGQ-VAE prior)
 
 [//]: # (  models/dmdp_fr_model.py    # Stage-II/III training model)
 
-[//]: # (  models/dqvae_model.py      # Stage-I prior training model)
+[//]: # (  models/dmgqvae_model.py      # Stage-I prior training model)
 
 [//]: # (facelib/                     # face detection, alignment, parsing, paste-back)
 

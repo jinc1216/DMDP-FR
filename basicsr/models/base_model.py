@@ -421,3 +421,4 @@ class BaseModel():
                 log_dict[name] = value.mean().item()
 
             return log_dict
+

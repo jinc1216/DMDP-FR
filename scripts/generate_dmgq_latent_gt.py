@@ -24,18 +24,18 @@ except ImportError as exc:
     raise ImportError("PyYAML is required to parse --opt network configs.") from exc
 
 
-def build_dqvae(args):
+def build_dmgqvae(args):
     if args.opt is not None:
         with open(args.opt, mode="r") as f:
             Loader, _ = ordered_yaml()
             opt = yaml.load(f, Loader=Loader)
         if opt.get("network_vqgan") is not None:
             net_opt = deepcopy(opt["network_vqgan"])
-        elif opt.get("network_g", {}).get("type") == "DQDynamicVQVAE":
+        elif opt.get("network_g", {}).get("type") == "DMGQVAE":
             net_opt = deepcopy(opt["network_g"])
         else:
             raise ValueError(
-                "--opt must contain network_vqgan or a DQDynamicVQVAE network_g "
+                "--opt must contain network_vqgan or a DMGQVAE network_g "
                 "for latent GT extraction."
             )
         if args.ckpt_path is not None:
@@ -57,7 +57,7 @@ def build_dqvae(args):
         decoder_ch_mult = [1, 1, 2, 2, 4, 4]
     latent_size = args.img_size // (2 ** (len(decoder_ch_mult) - 1))
     opt = dict(
-        type="DQDynamicVQVAE",
+        type="DMGQVAE",
         grain_type=args.grain_type,
         img_size=args.img_size,
         ch=128,
@@ -138,11 +138,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--test_path", type=str, default="datasets/ffhq/ffhq_512",
                         help="Training GT image folder.")
-    parser.add_argument("-o", "--save_root", type=str, default="./experiments/pretrained_models/dqvae")
+    parser.add_argument("-o", "--save_root", type=str, default="./experiments/pretrained_models/dmgqvae")
     parser.add_argument("--ckpt_path", type=str, default=None,
-                        help="DQ-VAE checkpoint. Overrides model_path from --opt when both are set.")
+                        help="DMGQ-VAE checkpoint. Overrides model_path from --opt when both are set.")
     parser.add_argument("--opt", type=str, default=None,
-                        help="Option yml containing network_vqgan or DQDynamicVQVAE network_g.")
+                        help="Option yml containing network_vqgan or DMGQVAE network_g.")
     parser.add_argument("--grain_type", type=str, default="triple", choices=["dual", "triple"])
     parser.add_argument("--img_size", type=int, default=512)
     parser.add_argument("--codebook_size", type=int, default=1024)
@@ -159,7 +159,7 @@ if __name__ == "__main__":
         args.save_root = args.save_root[:-1]
     os.makedirs(args.save_root, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    vqgan = build_dqvae(args).to(device).eval()
+    vqgan = build_dmgqvae(args).to(device).eval()
 
     latent = {"orig": {}, "hflip": {}}
     img_paths = collect_image_paths(args.test_path)
@@ -169,7 +169,7 @@ if __name__ == "__main__":
     for aug in ["orig"] if args.no_hflip else ["orig", "hflip"]:
         save_latents_for_aug(vqgan, img_paths, aug, args, device, latent)
 
-    latent_save_path = os.path.join(args.save_root, f"latent_gt_dq_{args.grain_type}_code{args.codebook_size}.pth")
+    latent_save_path = os.path.join(args.save_root, f"latent_gt_dmgq_{args.grain_type}_code{args.codebook_size}.pth")
     torch.save(latent, latent_save_path)
-    print(f"\nSaved {len(img_paths)} DQ latent GT records to {latent_save_path}")
+    print(f"\nSaved {len(img_paths)} DMGQ latent GT records to {latent_save_path}")
 

@@ -1,7 +1,7 @@
-"""BasicSR training model for DQ-VAE stage-1.
+"""BasicSR training model for DMGQ-VAE stage-1.
 
 This model ports DynamicVectorQuantization's Lightning training loop to the
-CodeFormer training stack.  It keeps the two-optimizer update, DQ LPIPS +
+CodeFormer training stack.  It keeps the two-optimizer update, DMGQ LPIPS +
 PatchGAN loss, EMA VQ, dynamic router and budget loss formulation.
 """
 from __future__ import annotations
@@ -13,10 +13,10 @@ import torch
 from tqdm import tqdm
 
 from basicsr.archs import build_network
-from basicsr.archs.dqvae_arch import (
+from basicsr.archs.dmgqvae_arch import (
     BudgetConstraint_NormedSeperateRatioMSE_TripleGrain,
     BudgetConstraint_RatioMSE_DualGrain,
-    DQLPIPS,
+    DMGQLPIPS,
 )
 from basicsr.losses import build_loss
 from basicsr.metrics import calculate_metric
@@ -26,7 +26,7 @@ from .sr_model import SRModel
 
 
 @MODEL_REGISTRY.register()
-class DQVAEDynamicModel(SRModel):
+class DMGQVAEModel(SRModel):
     """Stage-1 HQ prior learning with Dynamic Vector Quantization."""
 
     def feed_data(self, data):
@@ -57,7 +57,7 @@ class DQVAEDynamicModel(SRModel):
         self.net_g.train()
         self.net_d.train()
 
-        # DQ-VAE stage-1 loss hyperparameters; defaults match dqvae-dual-r-05_imagenet.yml.
+        # DMGQ-VAE stage-1 loss hyperparameters; defaults match dmgqvae-dual-r-05_imagenet.yml.
         self.codebook_weight = train_opt.get("codebook_weight", 1.0)
         self.pixelloss_weight = train_opt.get("pixelloss_weight", 1.0)
         self.disc_weight = train_opt.get("disc_weight", 0.8)
@@ -68,7 +68,7 @@ class DQVAEDynamicModel(SRModel):
         self.cri_gan = build_loss(train_opt["gan_opt"]).to(self.device) if train_opt.get("gan_opt") else None
         self.setup_amp(train_opt, logger)
         self.setup_gradient_accumulation(train_opt, logger)
-        self.cri_lpips = DQLPIPS(train_opt.get("lpips_weight_path", "weights/lpips/vgg.pth")).to(self.device).eval()
+        self.cri_lpips = DMGQLPIPS(train_opt.get("lpips_weight_path", "weights/lpips/vgg.pth")).to(self.device).eval()
 
         grain_type = self.opt["network_g"].get("grain_type", "triple")
         budget_opt = train_opt.get("budget_opt", None)
@@ -123,7 +123,7 @@ class DQVAEDynamicModel(SRModel):
         gan_active = self._gan_is_active(current_iter)
         if gan_active:
             if self.cri_gan is None:
-                raise ValueError("DQVAEDynamicModel requires train.gan_opt when net_d is active.")
+                raise ValueError("DMGQVAEModel requires train.gan_opt when net_d is active.")
             logits_fake = self.net_d(xrec.contiguous())
             g_loss = self.cri_gan(logits_fake, True, is_disc=False)
             try:
@@ -177,7 +177,7 @@ class DQVAEDynamicModel(SRModel):
 
         if self._gan_is_active(current_iter):
             if self.cri_gan is None:
-                raise ValueError("DQVAEDynamicModel requires train.gan_opt when net_d is active.")
+                raise ValueError("DMGQVAEModel requires train.gan_opt when net_d is active.")
             for p in self.net_d.parameters():
                 p.requires_grad = True
             if self.is_accumulation_start(current_iter):

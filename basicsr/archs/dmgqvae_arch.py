@@ -1,14 +1,3 @@
-"""
-Dynamic Vector Quantization (DQ-VAE) modules integrated into CodeFormer/BasicSR.
-
-This file ports the stage-1 implementation used by DynamicVectorQuantization into
-CodeFormer, while keeping BasicSR's registry/checkpoint conventions.  The dual
-configuration reproduces dqvae-dual-r-05_imagenet.yml in architecture, VQ,
-routing, budget constraint, discriminator and loss formulation.  The triple
-configuration extends the candidate downsampling granularities from {8, 16} to
-{8, 16, 32}; for 512px faces this corresponds to regular code maps of 64x64,
-32x32 and 16x16 respectively.
-"""
 from __future__ import annotations
 
 import functools
@@ -29,8 +18,7 @@ from basicsr.utils.registry import ARCH_REGISTRY
 
 
 # -----------------------------------------------------------------------------
-# DQ-VAE / VQGAN basic blocks. These mirror DynamicVectorQuantization's
-# modules/diffusionmodules/model.py.
+# DMGQ-VAE / VQGAN basic blocks.
 # -----------------------------------------------------------------------------
 
 def nonlinearity(x: torch.Tensor) -> torch.Tensor:
@@ -141,9 +129,8 @@ class AttnBlock(nn.Module):
 
 
 # -----------------------------------------------------------------------------
-# DQ routing and budget constraints. Training routing is Gumbel-Softmax hard
-# sampling; validation/inference routing is deterministic argmax, exactly as in
-# DynamicVectorQuantization's feature routers.
+# DMGQ routing and budget constraints. Training routing is Gumbel-Softmax hard
+# sampling; validation/inference routing is deterministic argmax.
 # -----------------------------------------------------------------------------
 
 class DualGrainFeatureRouter(nn.Module):
@@ -227,7 +214,7 @@ class TripleGrainFeatureRouter(nn.Module):
 
 
 class BudgetConstraint_RatioMSE_DualGrain(nn.Module):
-    """DQ-VAE dual budget loss from dqvae-dual-r-05_imagenet.yml."""
+    """DMGQ-VAE dual budget loss from dmgqvae-dual-r-05_imagenet.yml."""
     def __init__(self, target_ratio: float = 0.5, gamma: float = 10.0,
                  min_grain_size: int = 16, max_grain_size: int = 32,
                  calculate_all: bool = True):
@@ -247,14 +234,14 @@ class BudgetConstraint_RatioMSE_DualGrain(nn.Module):
         target_ratio = self.target_ratio * torch.ones_like(budget_ratio, device=gate.device)
         loss_budget = self.gamma * self.loss(budget_ratio, target_ratio)
         if self.calculate_all:
-            # Keep the original DQ implementation, including its duplicated term.
+            # Keep the original DMGQ implementation, including its duplicated term.
             loss_budget_last = self.gamma * self.loss(1 - budget_ratio, 1 - target_ratio)
             return loss_budget_last + loss_budget_last
         return loss_budget
 
 
 class BudgetConstraint_NormedSeperateRatioMSE_TripleGrain(nn.Module):
-    """DQ-VAE triple budget loss for granularities {8,16,32}."""
+    """DMGQ-VAE triple budget loss for granularities {8,16,32}."""
     def __init__(self, target_fine_ratio: float = 0.3, target_median_ratio: float = 0.3,
                  gamma: float = 1.0, min_grain_size: int = 16,
                  median_grain_size: int = 32, max_grain_size: int = 64):
@@ -483,7 +470,7 @@ class VectorQuantize2(nn.Module):
                     f"but got {vq_loss_mask.shape[-1]}."
                 )
             # Same scalar dynamic-token weight is used for EMA cluster/update.
-            # For triple DQ-VAE, coarse/median/fine repeated positions contribute
+            # For triple DMGQ-VAE, coarse/median/fine repeated positions contribute
             # 16 * 1/16, 4 * 1/4 and 1 * 1 real token respectively.
             ema_update_weight = vq_loss_mask.squeeze(-1) if vq_loss_mask.shape[-1] == 1 else vq_loss_mask.mean(dim=-1)
 
@@ -866,7 +853,7 @@ class LFF(nn.Module):
 
 
 class FourierPositionEmbedding(nn.Module):
-    # Exact DQ-VAE FourierPositionEmbedding.
+    # Exact DMGQ-VAE FourierPositionEmbedding.
     def __init__(self, coord_size: int, hidden_size: int, integer_values: bool = False):
         super().__init__()
         self.coord = convert_to_coord_format(1, coord_size, coord_size, "cpu", integer_values)
@@ -956,7 +943,7 @@ class GrainFiLMBlock(nn.Module):
         return h * (1 + gamma) + beta
 
 
-class DQDecoder(nn.Module):
+class DMGQDecoder(nn.Module):
     def __init__(self, ch: int, in_ch: int, out_ch: int, ch_mult: Tuple[int, ...],
                  num_res_blocks: int, resolution: int, attn_resolutions: List[int],
                  dropout: float = 0.0, resamp_with_conv: bool = True,
@@ -1053,8 +1040,8 @@ class DQDecoder(nn.Module):
 
 
 @ARCH_REGISTRY.register()
-class DQDynamicVQVAE(nn.Module):
-    """BasicSR-compatible DQ-VAE for CodeFormer stage-1 replacement."""
+class DMGQVAE(nn.Module):
+    """BasicSR-compatible DMGQ-VAE for CodeFormer stage-1 replacement."""
     def __init__(self, img_size: int = 512, grain_type: str = "triple", ch: int = 128,
                  ch_mult: Optional[List[int]] = None, num_res_blocks: int = 2,
                  attn_resolutions: Optional[List[int]] = None, dropout: float = 0.0,
@@ -1102,7 +1089,7 @@ class DQDynamicVQVAE(nn.Module):
         if latent_size is None:
             latent_size = img_size // (2 ** (len(decoder_ch_mult) - 1))
         self.latent_size = latent_size
-        self.decoder = DQDecoder(ch=ch, in_ch=quant_before_dim, out_ch=3,
+        self.decoder = DMGQDecoder(ch=ch, in_ch=quant_before_dim, out_ch=3,
                                  ch_mult=tuple(decoder_ch_mult), num_res_blocks=num_res_blocks,
                                  resolution=img_size, attn_resolutions=decoder_attn_resolutions,
                                  dropout=dropout, resamp_with_conv=resamp_with_conv,
@@ -1194,7 +1181,7 @@ class DQDynamicVQVAE(nn.Module):
 
 
 # -----------------------------------------------------------------------------
-# DQ discriminator and exact LPIPS/GAN loss support.
+# DMGQ discriminator and exact LPIPS/GAN loss support.
 # -----------------------------------------------------------------------------
 
 def weights_init(m):
@@ -1207,12 +1194,12 @@ def weights_init(m):
 
 
 @ARCH_REGISTRY.register()
-class DQNLayerDiscriminator(nn.Module):
+class DMGQNLayerDiscriminator(nn.Module):
     def __init__(self, input_nc: int = 3, ndf: int = 64, n_layers: int = 3,
                  use_actnorm: bool = False, model_path: Optional[str] = None):
         super().__init__()
         if use_actnorm:
-            raise NotImplementedError("ActNorm is not needed for dqvae-dual-r-05_imagenet.yml (use_actnorm=false).")
+            raise NotImplementedError("ActNorm is not needed for dmgqvae-dual-r-05_imagenet.yml (use_actnorm=false).")
         norm_layer = nn.BatchNorm2d
         use_bias = norm_layer != nn.BatchNorm2d
         kw = 4
@@ -1365,7 +1352,7 @@ class VGG16Slices(nn.Module):
         return [h_relu1_2, h_relu2_2, h_relu3_3, h_relu4_3, h_relu5_3]
 
 
-class DQLPIPS(nn.Module):
+class DMGQLPIPS(nn.Module):
     def __init__(self, lpips_weight_path: str = "weights/lpips/vgg.pth", use_dropout: bool = True):
         super().__init__()
         self.scaling_layer = ScalingLayer()
@@ -1410,3 +1397,4 @@ def adopt_weight(weight: float, global_step: int, threshold: int = 0, value: flo
     if global_step < threshold:
         weight = value
     return weight
+

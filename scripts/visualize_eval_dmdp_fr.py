@@ -32,31 +32,31 @@ REFERENCE_DATASET_METRICS = {"fid", "kid", "fid_dinov2"}
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Visualize DQCodeFormer results and evaluate saved images with pyiqa."
+        description="Visualize DMDP-FR results and evaluate saved images with pyiqa."
     )
     parser.add_argument("-i", "--input_path", type=str, default=None,
                         help="Input LQ image or folder. Required unless --skip_inference is set.")
     parser.add_argument("--gt_path", type=str, default=None,
                         help="GT image or folder for full-reference metrics and comparison images.")
-    parser.add_argument("-o", "--save_root", type=str, default="results/dqcodeformer_vis",
+    parser.add_argument("-o", "--save_root", type=str, default="results/dmdp_fr_vis",
                         help="Output root. Restored images are saved to <save_root>/restored.")
     parser.add_argument("--result_path", type=str, default=None,
                         help="Existing restored image folder for --skip_inference. Defaults to <save_root>/restored.")
     parser.add_argument("--skip_inference", action="store_true",
                         help="Skip model inference and only calculate pyiqa metrics from saved restored images.")
 
-    parser.add_argument("--opt", type=str, default="options/DQCodeFormer_stage3_triple.yml",
-                        help="DQCodeFormer option file. Its network_g section is used to build the model.")
+    parser.add_argument("--opt", type=str, default="options/DMDP-FR_stage3_triple.yml",
+                        help="DMDP-FR option file. Its network_g section is used to build the model.")
     parser.add_argument("--ckpt_path", type=str, default=None,
-                        help="DQCodeFormer net_g checkpoint, for example experiments/.../models/net_g_latest.pth.")
+                        help="DMDP-FR net_g checkpoint, for example experiments/.../models/net_g_latest.pth.")
 
     parser.add_argument("--img_size", type=int, default=None,
                         help="Resize inputs to this size. Defaults to network_g.img_size from --opt.")
     parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--w", type=float, default=None,
-                        help="Fidelity weight for DQCodeFormer forward. Defaults to train.fidelity_weight from --opt.")
+                        help="Fidelity weight for DMDP-FR forward. Defaults to train.fidelity_weight from --opt.")
     parser.add_argument("--adain", action="store_true",
-                        help="Enable adain=True in DQCodeFormer forward.")
+                        help="Enable adain=True in DMDP-FR forward.")
     parser.add_argument("--device", type=str, default=None,
                         help="Device string such as cuda, cuda:0, or cpu. Defaults to cuda if available.")
     parser.add_argument("--suffix", type=str, default=None,
@@ -66,7 +66,7 @@ def parse_args():
     parser.add_argument("--save_comparison", action="store_true",
                         help="Save side-by-side LQ/restored(/GT) images to <save_root>/comparison.")
     parser.add_argument("--save_gate_map", action="store_true",
-                        help="Save DQCodeFormer latent granularity maps. Each 8x8 gate cell is rendered "
+                        help="Save DMDP-FR latent granularity maps. Each 8x8 gate cell is rendered "
                              "as its assembled region on the full latent grid.")
     parser.add_argument("--save_gate_probs", action="store_true",
                         help="Also save per-grain gate probability heatmaps. Requires --save_gate_map.")
@@ -147,7 +147,7 @@ def infer_tensor_min_max(mean, std):
     )
 
 
-def build_dqcodeformer(opt, args, device):
+def build_dmdp_fr(opt, args, device):
     if args.ckpt_path is None:
         raise ValueError("--ckpt_path is required unless --skip_inference is set.")
 
@@ -315,7 +315,7 @@ def render_latent_granularity_map(gate_idx, latent_shape, out_size, colors, bord
 
 def save_latent_granularity_visualizations(pred, batch_idx, restored_img, save_stem, gate_dirs, alpha):
     if not isinstance(pred, dict) or "gate" not in pred:
-        raise ValueError("DQCodeFormer latent granularity visualization requires pred['gate'].")
+        raise ValueError("DMDP-FR latent granularity visualization requires pred['gate'].")
 
     gate_tensor = pred["gate"][batch_idx].detach().float().cpu()
     gate_prob = gate_tensor if pred.get("gate_is_prob", False) else torch.softmax(gate_tensor, dim=0)
@@ -378,10 +378,10 @@ def save_latent_granularity_stats(rows, save_root):
 
 
 def forward_for_visualization(net, batch, fidelity_weight, adain, network_type):
-    if network_type == "DQDynamicVQVAE":
+    if network_type == "DMGQVAE":
         output, _, info = net(batch)
         if not isinstance(info, dict) or "gate" not in info:
-            raise ValueError("DQDynamicVQVAE visualization requires forward info['gate'].")
+            raise ValueError("DMGQVAE visualization requires forward info['gate'].")
         pred = {
             "gate": info["gate"],
             "gate_is_prob": True,
@@ -405,9 +405,9 @@ def run_inference(opt, args, device):
     fidelity_weight = args.w
     if fidelity_weight is None:
         fidelity_weight = float(opt.get("train", {}).get("fidelity_weight", 1.0))
-    network_type = opt["network_g"].get("type", "DQCodeFormer")
+    network_type = opt["network_g"].get("type", "DMDP-FR")
 
-    net = build_dqcodeformer(opt, args, device)
+    net = build_dmdp_fr(opt, args, device)
     restored_dir = Path(args.save_root) / "restored"
     restored_dir.mkdir(parents=True, exist_ok=True)
     comparison_dir = Path(args.save_root) / "comparison"
@@ -427,7 +427,7 @@ def run_inference(opt, args, device):
             gate_dirs["prob"].mkdir(parents=True, exist_ok=True)
     gt_index = build_gt_index(args.gt_path, recursive=args.recursive)
 
-    print(f"Running DQCodeFormer inference on {len(input_paths)} images.")
+    print(f"Running DMDP-FR inference on {len(input_paths)} images.")
     print(f"Save restored images to: {restored_dir}")
     for start in tqdm(range(0, len(input_paths), args.batch_size), desc="Inference"):
         batch_paths = input_paths[start:start + args.batch_size]
