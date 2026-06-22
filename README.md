@@ -1,6 +1,6 @@
 # DMDP-FR
 
-Implementation of **DMDP-FR: Dynamic Multi-Granularity Discrete Prior Representation for Blind Face Restoration**. The repository keeps only the code path needed by DMDP-FR: dynamic DMGQ-VAE prior learning, coarse-to-fine code prediction, granularity-aware fusion, training configs, inference, and visualization/evaluation utilities.
+Implementation of **DMDP-FR: Dynamic Multi-Granularity Discrete Prior Representation for Blind Face Restoration**. The repository includes the code path needed by DMDP-FR: dynamic DMGQ-VAE prior learning, coarse-to-fine code prediction, granularity-aware fusion, training configs, inference, and visualization/evaluation utilities.
 
 [//]: # (> Note: the Python registry names use `DMDPFR` and `DMDPFRModel` because Python identifiers cannot contain `-`. User-facing files, commands, and documentation use the paper name `DMDP-FR`.)
 
