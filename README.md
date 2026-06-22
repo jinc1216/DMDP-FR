@@ -1,8 +1,8 @@
 # DMDP-FR
 
-Official-style compact implementation of **DMDP-FR: Dynamic Multi-Granularity Discrete Prior Representation for Blind Face Restoration**. The repository keeps only the code path needed by DMDP-FR: dynamic DQ-VAE prior learning, coarse-to-fine code prediction, granularity-aware fusion, training configs, inference, and visualization/evaluation utilities.
+Implementation of **DMDP-FR: Dynamic Multi-Granularity Discrete Prior Representation for Blind Face Restoration**. The repository keeps only the code path needed by DMDP-FR: dynamic DQ-VAE prior learning, coarse-to-fine code prediction, granularity-aware fusion, training configs, inference, and visualization/evaluation utilities.
 
-> Note: the Python registry names use `DMDPFR` and `DMDPFRModel` because Python identifiers cannot contain `-`. User-facing files, commands, and documentation use the paper name `DMDP-FR`.
+[//]: # (> Note: the Python registry names use `DMDPFR` and `DMDPFRModel` because Python identifiers cannot contain `-`. User-facing files, commands, and documentation use the paper name `DMDP-FR`.)
 
 ## Framework
 
@@ -16,7 +16,7 @@ DMDP-FR restores blind degraded faces in three stages:
 
 ![DMDP-FR framework](assets/figures/framework.png)
 
-## Results From The TCSVT Manuscript
+## Results From The DMDP-FR
 
 ### Synthetic CelebA-Test
 
