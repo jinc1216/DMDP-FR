@@ -83,15 +83,83 @@ pip install -r requirements.txt
 
 This repository is designed to run from the repository root. No package installation step is required.
 
-## Dataset Layout
+## Dataset Preparation
 
-Edit the `dataroot_*` fields in `options/*.yml` for your environment. The default configs expect:
+Keep all datasets under `./datasets/` and edit the `dataroot_*` fields in `options/*.yml` if your local paths are different.
+
+### Training Dataset
+
+DMDP-FR uses FFHQ for all three training stages. The images should be aligned face images at `512x512`.
+
+If you start from the original FFHQ `1024x1024` images, resize them to `512x512` before training. A simple layout is:
 
 ```text
 datasets/
-  ffhq/ffhq_512/
-  faces/validation/lq/
-  faces/validation/gt/
+  ffhq/
+    ffhq_512/
+      00000.png
+      00001.png
+      ...
+```
+
+The default training configs read this folder through:
+
+| Config | Training dataset type | Training path field |
+| --- | --- | --- |
+| `options/DMDP-FR_stage1_triple.yml` | `FFHQBlindDataset` | `datasets.train.dataroot_gt: datasets/ffhq/ffhq_512` |
+| `options/DMDP-FR_stage2_triple.yml` | `FFHQBlindDataset` | `datasets.train.dataroot_gt: datasets/ffhq/ffhq_512` |
+| `options/DMDP-FR_stage3_triple.yml` | `FFHQBlindJointDataset` | `datasets.train.dataroot_gt: datasets/ffhq/ffhq_512` |
+
+Stage-I trains the dynamic multi-granularity DQ-VAE prior from HQ faces. Stage-II and Stage-III synthesize LQ inputs online from the same HQ training set using the degradation settings in the YAML files.
+
+### Validation Dataset
+
+Prepare paired validation images under `datasets/faces/validation/`. The `gt` folder contains aligned HQ faces. The `lq` folder contains the corresponding degraded LQ faces for Stage-II and Stage-III validation.
+
+```text
+datasets/
+  faces/
+    validation/
+      gt/
+        000001.png
+        000002.png
+        ...
+      lq/
+        000001.png
+        000002.png
+        ...
+```
+
+The default validation configs use:
+
+| Config | Validation dataset type | LQ path | GT path |
+| --- | --- | --- | --- |
+| `options/DMDP-FR_stage1_triple.yml` | `PairedImageDataset` | `datasets/faces/validation/gt` | `datasets/faces/validation/gt` |
+| `options/DMDP-FR_stage2_triple.yml` | `PairedImageDataset` | `datasets/faces/validation/lq` | `datasets/faces/validation/gt` |
+| `options/DMDP-FR_stage3_triple.yml` | `PairedImageDataset` | `datasets/faces/validation/lq` | `datasets/faces/validation/gt` |
+
+Stage-I validates reconstruction quality by using HQ images as both input and target. Stage-II and Stage-III validate restoration quality from paired LQ/HQ images.
+
+### Optional Latent GT Cache
+
+Stage-II and Stage-III can either generate DQ latent supervision online from `network_vqgan`, or read precomputed latent codes by setting `datasets.train.latent_gt_path` in the YAML config.
+
+Generate the cache with:
+
+```bash
+python scripts/generate_dq_latent_gt.py \
+  -i datasets/ffhq/ffhq_512 \
+  --opt options/DMDP-FR_stage1_triple.yml \
+  --ckpt_path experiments/pretrained_models/dqvae/dqvae_stage1_triple.pth \
+  -o experiments/pretrained_models/dqvae
+```
+
+Then set, for example:
+
+```yaml
+datasets:
+  train:
+    latent_gt_path: experiments/pretrained_models/dqvae/latent_gt_dq_triple_code1024.pth
 ```
 
 ## Checkpoint Layout
