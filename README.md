@@ -241,7 +241,9 @@ python basicsr/train.py -opt options/DMDP-FR_inpainting.yml
 
 ## Visualization And Evaluation
 
-Generate restored images, side-by-side comparisons, granularity maps, and metrics:
+### With CelebA-Test
+
+Use this setting for paired benchmarks such as CelebA-Test. The command saves restored images, LQ/restored/GT comparisons, granularity maps, and full-reference metrics.
 
 ```bash
 python scripts/visualize_eval_dmdp_fr.py \
@@ -249,10 +251,30 @@ python scripts/visualize_eval_dmdp_fr.py \
   --gt_path datasets/faces/validation/gt \
   --opt options/DMDP-FR_stage3_triple.yml \
   --ckpt_path experiments/pretrained_models/dmdp_fr/dmdp_fr_stage3.pth \
+  --fid_ref_path datasets/FFHQ \
   --save_comparison \
   --save_gate_map \
-  --metrics psnr,ssim,lpips,niqe
+  --metrics fid,lpips,niqe,psnr,ssim \
+  --w 1.0
 ```
+
+### Without Real-World Benchmarks
+
+Use this setting for real-world LQ-only benchmarks such as LFW-Test, WebPhoto-Test, and WIDER-Test. Do not pass `--gt_path`; use no-reference metrics such as `niqe` and `musiq`.
+
+```bash
+python scripts/visualize_eval_dmdp_fr.py \
+  -i datasets/faces/real_world/lfw_test/lq \
+  --opt options/DMDP-FR_stage3_triple.yml \
+  --ckpt_path experiments/pretrained_models/dmdp_fr/dmdp_fr_stage3.pth \
+  --fid_ref_path datasets/FFHQ \
+  --save_comparison \
+  --save_gate_map \
+  --metrics fid,musiq \
+  --w 0.0
+```
+
+Replace `datasets/faces/real_world/lfw_test/lq` with `datasets/faces/real_world/webphoto_test/lq` or `datasets/faces/real_world/wider_test/lq` for the other real-world test sets.
 
 ## Acknowledgement
 
