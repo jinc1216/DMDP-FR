@@ -73,12 +73,25 @@ DMDP-FR restores blind degraded faces in three stages:
 
 ![Ablation and route visualizations](assets/figures/ablation_visuals.png)
 
+## Requirements
+
+| Item | Requirement |
+| --- | --- |
+| OS | Ubuntu 22.04 |
+| Python | 3.10. Recommend using Anaconda or Miniconda. |
+| PyTorch | 2.4 |
+| GPU/CUDA | NVIDIA GPU with CUDA 12.1 |
+
 ## Installation
 
 ```bash
 conda create -n dmdp-fr python=3.10 -y
 conda activate dmdp-fr
 pip install -r requirements.txt
+```
+```bash
+cd basicsr
+python setup.py develop
 ```
 
 This repository is designed to run from the repository root. No package installation step is required.
@@ -266,4 +279,3 @@ python scripts/visualize_eval_dmdp_fr.py \
 ## Acknowledgement
 
 We thank the authors and contributors of [BasicSR](https://github.com/XPixelGroup/BasicSR), [CodeFormer](https://github.com/sczhou/CodeFormer), [VQFR](https://github.com/TencentARC/VQFR), and [DAEFR](https://github.com/LIAGM/DAEFR) for making their code, models, and project resources publicly available.
-
