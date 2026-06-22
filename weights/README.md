@@ -1,6 +1,6 @@
 # Weights
 
-Large pretrained weights are intentionally not tracked in this compact repository.
+[//]: # (Large pretrained weights are intentionally not tracked in this compact repository.)
 
 Expected layout:
 
