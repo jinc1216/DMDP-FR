@@ -1,9 +1,3 @@
-"""BasicSR training model for DMGQ-VAE stage-1.
-
-This model ports DynamicVectorQuantization's Lightning training loop to the
-CodeFormer training stack.  It keeps the two-optimizer update, DMGQ LPIPS +
-PatchGAN loss, EMA VQ, dynamic router and budget loss formulation.
-"""
 from __future__ import annotations
 
 from collections import OrderedDict
