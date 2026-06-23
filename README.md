@@ -117,12 +117,12 @@ datasets/
 
 Please put the following validation and testing datasets under the `./datasets/` folder.
 
-| Datasets | Data Type | Short Description | Download |
-| --- | --- | --- | --- |
-| CelebA-Test | `gt + lq` | 3000 paired HQ/LQ images for full-reference evaluation | [GT: celeba_512_validation.zip](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/celeba_512_validation.zip) / [LQ: self_celeba_512_v2.zip](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/self_celeba_512_v2.zip) |
-| LFW-Test | `lq only` | 1711 real-world LQ images for testing | [lfw_cropped_faces.zip](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/lfw_cropped_faces.zip) |
-| WebPhoto-Test | `lq only` | 407 real-world LQ images for testing | [WebPhoto-Test](https://github.com/TencentARC/GFPGAN) |
-| WIDER-Test | `lq only` | 970 real-world LQ images for testing | [Wider-Test.zip](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/Wider-Test.zip) |
+| Datasets | Data Type | Short Description | Download                                                                                                 |
+| --- | --- | --- |----------------------------------------------------------------------------------------------------------|
+| CelebA-Test | `gt + lq` | 3000 paired HQ/LQ images for full-reference evaluation | [CelabA-Test](https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html)                                         |
+| LFW-Test | `lq only` | 1711 real-world LQ images for testing | [LFW-Test](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/lfw_cropped_faces.zip) |
+| WebPhoto-Test | `lq only` | 407 real-world LQ images for testing | [WebPhoto-Test](https://github.com/TencentARC/GFPGAN)                                                    |
+| WIDER-Test | `lq only` | 970 real-world LQ images for testing | [Wider-Test](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/Wider-Test.zip)      |
 
 For the default validation during training, prepare the paired CelebA-Test images under `datasets/faces/validation/`. The `gt` folder contains aligned HQ faces. The `lq` folder contains the corresponding degraded LQ faces for Stage-II and Stage-III validation.
 
