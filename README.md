@@ -1,4 +1,4 @@
-````# DMDP-FR
+# DMDP-FR
 
 Implementation of **DMDP-FR: Dynamic Multi-Granularity Discrete Prior Representation for Blind Face Restoration**. The repository includes the code path needed by DMDP-FR: dynamic DMGQ-VAE prior learning, coarse-to-fine code prediction, granularity-aware fusion, training configs, inference, and visualization/evaluation utilities.
 
@@ -189,7 +189,7 @@ datasets:
 
 Download the pretrained weights from Baidu Netdisk:
 
-- Link: https://pan.baidu.com/s/1sZ1qcciduVsgC8UiQhDqBg
+- Link: [Baidu Netdisk](https://pan.baidu.com/s/1sZ1qcciduVsgC8UiQhDqBg)
 - Extraction code: `kvur`
 
 Place the downloaded files according to the checkpoint layout below.
@@ -288,4 +288,3 @@ Replace `datasets/faces/real_world/lfw_test/lq` with `datasets/faces/real_world/
 ## Acknowledgement
 
 We thank the authors and contributors of [BasicSR](https://github.com/XPixelGroup/BasicSR), [CodeFormer](https://github.com/sczhou/CodeFormer), [VQFR](https://github.com/TencentARC/VQFR), and [DAEFR](https://github.com/LIAGM/DAEFR) for making their code, models, and project resources publicly available.
-````
