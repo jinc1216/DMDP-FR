@@ -1,4 +1,4 @@
-# DMDP-FR
+````# DMDP-FR
 
 Implementation of **DMDP-FR: Dynamic Multi-Granularity Discrete Prior Representation for Blind Face Restoration**. The repository includes the code path needed by DMDP-FR: dynamic DMGQ-VAE prior learning, coarse-to-fine code prediction, granularity-aware fusion, training configs, inference, and visualization/evaluation utilities.
 
@@ -271,7 +271,7 @@ python scripts/visualize_eval_dmdp_fr.py \
   --save_comparison \
   --save_gate_map \
   --metrics fid,musiq \
-  --w 0.0
+  --w 0.1
 ```
 
 Replace `datasets/faces/real_world/lfw_test/lq` with `datasets/faces/real_world/webphoto_test/lq` or `datasets/faces/real_world/wider_test/lq` for the other real-world test sets.
@@ -279,3 +279,4 @@ Replace `datasets/faces/real_world/lfw_test/lq` with `datasets/faces/real_world/
 ## Acknowledgement
 
 We thank the authors and contributors of [BasicSR](https://github.com/XPixelGroup/BasicSR), [CodeFormer](https://github.com/sczhou/CodeFormer), [VQFR](https://github.com/TencentARC/VQFR), and [DAEFR](https://github.com/LIAGM/DAEFR) for making their code, models, and project resources publicly available.
+````
