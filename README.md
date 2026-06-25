@@ -21,22 +21,22 @@ DMDP-FR restores blind degraded faces in three stages:
 ### Synthetic CelebA-Test
 
 | Method | FID (lower) | LPIPS (lower) | NIQE (lower) | IDA (lower) | PSNR (higher) | SSIM (higher) |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| DR2 | 88.504 | 0.484 | 5.656 | 1.203 | 20.805 | 0.609 |
-| BFRffusion | 77.338 | 0.478 | 4.461 | 1.185 | 20.560 | 0.536 |
-| DiffBIR | 69.962 | 0.375 | 5.184 | 1.073 | 21.707 | 0.615 |
-| CodeFormer | 63.621 | 0.365 | 4.516 | **1.019** | 21.451 | 0.581 |
-| RestoreFormer++ | 57.972 | 0.450 | 3.958 | 1.160 | 20.146 | 0.500 |
-| VSPBFR | 56.725 | 0.434 | <u>3.466</u> | 1.195 | 20.114 | 0.526 |
-| GPEN | 56.145 | 0.425 | 3.913 | 1.141 | 20.545 | 0.552 |
-| VQFR | 55.456 | 0.463 | **3.314** | 1.197 | 19.487 | 0.481 |
-| RestoreFormer | 55.425 | 0.463 | 4.003 | 1.179 | 20.149 | 0.500 |
-| AuthFace | 54.624 | 0.389 | 6.378 | 1.136 | 20.618 | 0.567 |
-| DAEFR | 52.987 | 0.388 | 4.417 | <u>1.044</u> | 19.932 | 0.559 |
-| InterLCM | 51.524 | 0.398 | 3.943 | 1.103 | 20.061 | 0.541 |
-| DifFace | <u>51.247</u> | <u>0.347</u> | 4.631 | 1.060 | <u>22.190</u> | <u>0.633</u> |
-| GFP-GAN | **46.958** | 0.453 | 4.061 | 1.268 | 19.574 | 0.522 |
-| DMDP-FR (ours) | 52.096 | **0.346** | 5.003 | **1.019** | **22.216** | **0.649** |
+| --- | ---: |--------------:| ---: | ---: | ---: | ---: |
+| DR2 | 88.504 |         0.484 | 5.656 | 1.203 | 20.805 | 0.609 |
+| BFRffusion | 77.338 |         0.478 | 4.461 | 1.185 | 20.560 | 0.536 |
+| DiffBIR | 69.962 |         0.375 | 5.184 | 1.073 | 21.707 | 0.615 |
+| CodeFormer | 63.621 |         0.365 | 4.516 | **1.019** | 21.451 | 0.581 |
+| RestoreFormer++ | 57.972 |         0.450 | 3.958 | 1.160 | 20.146 | 0.500 |
+| VSPBFR | 56.725 |         0.434 | <u>3.466</u> | 1.195 | 20.114 | 0.526 |
+| GPEN | 56.145 |         0.425 | 3.913 | 1.141 | 20.545 | 0.552 |
+| VQFR | 55.456 |         0.463 | **3.314** | 1.197 | 19.487 | 0.481 |
+| RestoreFormer | 55.425 |         0.463 | 4.003 | 1.179 | 20.149 | 0.500 |
+| AuthFace | 54.624 |         0.389 | 6.378 | 1.136 | 20.618 | 0.567 |
+| DAEFR | 52.987 |         0.388 | 4.417 | <u>1.044</u> | 19.932 | 0.559 |
+| InterLCM | 51.524 |         0.398 | 3.943 | 1.103 | 20.061 | 0.541 |
+| DifFace | <u>51.247</u> |  <u>0.374</u> | 4.631 | 1.060 | <u>22.190</u> | <u>0.633</u> |
+| GFP-GAN | **46.958** |         0.453 | 4.061 | 1.268 | 19.574 | 0.522 |
+| DMDP-FR (ours) | 52.096 |     **0.346** | 5.003 | **1.019** | **22.216** | **0.649** |
 
 ![Synthetic visual comparison](assets/figures/synthetic_results.png)
 
@@ -46,19 +46,19 @@ DMDP-FR restores blind degraded faces in three stages:
 | --- |----------------:|-------------------:|---------------------:|------------------------:|------------------:|---------------------:|
 | DR2 |          58.414 |             69.578 |              119.802 |                  58.600 |            63.433 |               57.133 |
 | BFRffusion |          51.731 |             69.606 |               87.577 |                  62.331 |            58.586 |               61.581 |
-| RestoreFormer++ |          51.870 |             72.249 |        <u>77.637</u> |                  71.486 |            46.363 |               71.511 |
-| DiffBIR |          48.337 |             70.836 |               89.463 |                  71.864 |            49.524 |               68.662 |
+| RestoreFormer++ |          51.870 |             72.249 |        <u>77.637</u> |                  69.542 |            46.363 |               71.511 |
+| DiffBIR |          48.337 |             70.836 |               89.463 |                  68.473 |            49.524 |               68.662 |
 | RestoreFormer |          49.905 |             73.074 |               79.655 |                  69.840 |            51.474 |               67.840 |
-| CodeFormer |          54.407 |             71.430 |               86.456 |                  74.000 |            40.012 |               69.310 |
-| VSPBFR |   <u>47.781</u> |             74.737 |               78.739 |                  73.231 |            38.984 |               62.596 |
-| GPEN |          57.582 |             73.590 |               95.207 |           <u>75.576</u> |            54.007 |               65.326 |
-| VQFR |          51.821 |      <u>74.745</u> |               78.251 |                  72.009 |            45.122 |               64.013 |
-| AuthFace |      **47.431** |             73.140 |               92.724 |                  72.991 |            43.351 |               63.325 |
-| DAEFR |          48.849 |             73.840 |           **77.336** |                  72.708 |     <u>37.703</u> |               64.146 |
-| InterLCM |          57.178 |             74.692 |               79.492 |              **75.798** |            41.685 |               65.447 |
+| CodeFormer |          54.407 |             71.430 |               86.456 |                  70.510 |            40.012 |               69.310 |
+| VSPBFR |   <u>47.781</u> |             74.237 |               78.739 |                  70.231 |            38.984 |               62.596 |
+| GPEN |          57.582 |             73.590 |               95.207 |              **73.413** |            54.007 |               65.326 |
+| VQFR |          51.821 |      <u>74.345</u> |               78.251 |                  70.009 |            45.122 |               64.013 |
+| AuthFace |      **47.431** |             73.140 |               92.724 |                  68.991 |            43.351 |               63.325 |
+| DAEFR |          48.849 |             73.840 |           **77.336** |                  70.708 |     <u>37.703</u> |               64.146 |
+| InterLCM |          57.178 |             74.292 |               79.492 |                  69.798 |            41.685 |               65.447 |
 | DifFace |          48.222 |             69.848 |               83.266 |                  65.170 |            37.915 |               65.121 |
-| GFP-GAN |          51.499 |             73.569 |               91.539 |                  72.097 |            40.468 |           **72.814** |
-| DMDP-FR (ours) |          49.973 |         **74.801** |               89.247 |                  70.770 |        **35.263** |        <u>71.868</u> |
+| GFP-GAN |          51.499 |             73.569 |               91.539 |                  68.037 |            40.468 |           **72.814** |
+| DMDP-FR (ours) |          49.687 |         **74.800** |               90.801 |        <u>70.783</u> |        **35.287** |        <u>71.802</u> |
 
 ![Real-world visual comparison](assets/figures/realworld_results.png)
 
@@ -259,12 +259,11 @@ python scripts/visualize_eval_dmdp_fr.py \
   -i datasets/faces/validation/lq \
   --gt_path datasets/faces/validation/gt \
   --opt options/DMDP-FR_stage3_triple.yml \
-  --ckpt_path experiments/pretrained_models/dmdp_fr/dmdp_fr_stage3.pth \
+  --ckpt_path experiments/pretrained_models/dmdp_fr/synthetic_net_g_latest.pth \
   --fid_ref_path datasets/FFHQ \
   --save_comparison \
   --save_gate_map \
   --metrics fid,lpips,niqe,psnr,ssim \
-  --w 1.0
 ```
 
 ### Without Real-World Benchmarks
@@ -274,8 +273,8 @@ Use this setting for real-world LQ-only benchmarks such as LFW-Test, WebPhoto-Te
 ```bash
 python scripts/visualize_eval_dmdp_fr.py \
   -i datasets/faces/real_world/lfw_test/lq \
-  --opt options/DMDP-FR_stage3_triple.yml \
-  --ckpt_path experiments/pretrained_models/dmdp_fr/dmdp_fr_stage3.pth \
+  --opt options/DMDP-FR_stage3_triple_iqa_unfreeze.yml \
+  --ckpt_path experiments/pretrained_models/dmdp_fr/real-world_net_g_latest.pth \
   --fid_ref_path datasets/FFHQ \
   --save_comparison \
   --save_gate_map \
