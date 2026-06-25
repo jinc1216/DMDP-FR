@@ -185,6 +185,15 @@ datasets:
     latent_gt_path: experiments/pretrained_models/dmgqvae/latent_gt_dmgq_triple_code1024.pth
 ```
 
+## Pretrained Weights
+
+Download the pretrained weights from Baidu Netdisk:
+
+- Link: https://pan.baidu.com/s/1sZ1qcciduVsgC8UiQhDqBg
+- Extraction code: `kvur`
+
+Place the downloaded files according to the checkpoint layout below.
+
 ## Checkpoint Layout
 
 ```text
