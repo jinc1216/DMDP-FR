@@ -129,6 +129,80 @@ def strip_suffix(stem, suffix):
     return stem
 
 
+def format_stem_examples(stems, limit=10):
+    stems = sorted(stems)
+    shown = ", ".join(stems[:limit])
+    if len(stems) > limit:
+        shown += f", ... (+{len(stems) - limit} more)"
+    return shown
+
+
+def build_unique_stem_index(paths, suffix=None, label="images"):
+    stem_index = {}
+    duplicates = {}
+    for path in paths:
+        stem = strip_suffix(path.stem, suffix)
+        if stem in stem_index:
+            duplicates.setdefault(stem, [stem_index[stem]]).append(path)
+        else:
+            stem_index[stem] = path
+
+    if duplicates:
+        details = []
+        for stem in sorted(duplicates):
+            names = ", ".join(p.name for p in duplicates[stem][:5])
+            if len(duplicates[stem]) > 5:
+                names += f", ... (+{len(duplicates[stem]) - 5} more)"
+            details.append(f"{stem}: {names}")
+            if len(details) >= 10:
+                break
+        raise ValueError(
+            f"Duplicate filename stems found in {label} after suffix normalization. "
+            "Metrics would be ambiguous.\n"
+            + "\n".join(details)
+        )
+    return stem_index
+
+
+def validate_restored_names_match_lq(args, result_paths):
+    if args.input_path is None:
+        return
+
+    input_paths = collect_image_paths(args.input_path, recursive=args.recursive)
+    input_index = build_unique_stem_index(input_paths, label="input LQ images")
+    restored_index = build_unique_stem_index(
+        result_paths, suffix=args.suffix, label="restored images"
+    )
+
+    input_stems = set(input_index.keys())
+    restored_stems = set(restored_index.keys())
+    missing = input_stems - restored_stems
+    extra = restored_stems - input_stems
+    if missing or extra:
+        message = [
+            "Restored image names do not match input LQ image names by filename stem.",
+            f"Input LQ count: {len(input_stems)}",
+            f"Restored count: {len(restored_stems)}",
+        ]
+        if missing:
+            message.append(
+                f"Missing restored images for {len(missing)} LQ stems: "
+                f"{format_stem_examples(missing)}"
+            )
+        if extra:
+            message.append(
+                f"Extra restored images without matching LQ stems: "
+                f"{format_stem_examples(extra)}"
+            )
+        message.append(
+            "Use a clean --save_root/--result_path, remove stale restored files, "
+            "or verify --suffix/--recursive settings."
+        )
+        raise ValueError("\n".join(message))
+
+    print(f"Restored/LQ filename check passed: {len(input_stems)} matched images.")
+
+
 def get_mean_std(opt):
     dataset_opt = opt.get("datasets", {}).get("val", None) or opt.get("datasets", {}).get("train", {})
     mean = tuple(dataset_opt.get("mean", [0.5, 0.5, 0.5]))
@@ -546,6 +620,7 @@ def evaluate_saved_results(args, device):
     result_paths = collect_image_paths(result_dir, recursive=False)
     if len(result_paths) == 0:
         raise FileNotFoundError(f"No restored images found in {result_dir}.")
+    validate_restored_names_match_lq(args, result_paths)
     gt_index = build_gt_index(args.gt_path, recursive=args.recursive)
 
     metric_prefix = Path(args.metric_output) if args.metric_output else Path(args.save_root) / "metrics"
@@ -598,4 +673,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

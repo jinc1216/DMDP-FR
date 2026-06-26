@@ -93,7 +93,7 @@ train:
     gan_type: hinge
     loss_weight: !!float 1.0
   budget_opt:
-    target_ratio: 0.60
+    target_ratio: 0.50
     gamma: 1.0
     min_grain_size: 16 # 512 / 32 coarse grid
     max_grain_size: 32 # 512 / 16 fine grid
