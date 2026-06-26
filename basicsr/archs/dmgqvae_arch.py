@@ -1,7 +1,3 @@
-from __future__ import annotations
-
-import functools
-import math
 import os
 from typing import Dict, List, Optional, Tuple
 
@@ -214,7 +210,7 @@ class TripleGrainFeatureRouter(nn.Module):
 
 
 class BudgetConstraint_RatioMSE_DualGrain(nn.Module):
-    """DMGQ-VAE dual budget loss from dmgqvae-dual-r-05_imagenet.yml."""
+
     def __init__(self, target_ratio: float = 0.5, gamma: float = 10.0,
                  min_grain_size: int = 16, max_grain_size: int = 32,
                  calculate_all: bool = True):
@@ -241,7 +237,7 @@ class BudgetConstraint_RatioMSE_DualGrain(nn.Module):
 
 
 class BudgetConstraint_NormedSeperateRatioMSE_TripleGrain(nn.Module):
-    """DMGQ-VAE triple budget loss for granularities {8,16,32}."""
+
     def __init__(self, target_fine_ratio: float = 0.3, target_median_ratio: float = 0.3,
                  gamma: float = 1.0, min_grain_size: int = 16,
                  median_grain_size: int = 32, max_grain_size: int = 64):
