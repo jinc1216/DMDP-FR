@@ -64,12 +64,12 @@ DMDP-FR restores blind degraded faces in three stages:
 
 ### Ablation Summary
 
-| Component | What It Adds |
-| --- | --- |
-| DMGQ | Adaptive token allocation for structurally complex facial regions. |
-| CFCP | Hierarchical prediction that stabilizes global layout before fine details. |
-| GAMF | Input-dependent feature fusion for perception-fidelity control. |
-| Triple granularity `{16,32,64}` | Best reported WIDER-Test setting: FID 35.230 with 608 tokens and 0.0941 sec/img latency. |
+| Component | What It Adds                                                                           |
+| --- |----------------------------------------------------------------------------------------|
+| DMGQ | Adaptive token allocation for structurally complex facial regions.                     |
+| CFCP | Hierarchical prediction that stabilizes global layout before fine details.             |
+| GAMF | Input-dependent feature fusion for perception-fidelity control.                        |
+| Triple granularity `{16,32,64}` | Best reported WIDER-Test setting: FID 35.287 with 608 tokens and 0.079 sec/img latency. |
 
 ![Ablation and route visualizations](assets/figures/ablation_visuals.png)
 
