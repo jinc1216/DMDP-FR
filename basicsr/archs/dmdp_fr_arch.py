@@ -638,7 +638,7 @@ class DMDPFR(DMGQVAE):
         h = self.decoder.mid.attn_1(h)
         h = self.decoder.mid.block_2(h, temb)
         for i_level in reversed(range(self.decoder.num_resolutions)):
-            for i_block in range(self.decoder.num_res_blocks + 1):
+            for i_block in range(self.decoder.num_res_blocks):
                 h = self.decoder.up[i_level].block[i_block](h, temb)
                 if len(self.decoder.up[i_level].attn) > 0:
                     h = self.decoder.up[i_level].attn[i_block](h)

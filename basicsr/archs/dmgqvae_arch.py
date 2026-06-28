@@ -972,7 +972,7 @@ class DMGQDecoder(nn.Module):
             block = nn.ModuleList()
             attn = nn.ModuleList()
             block_out = ch * ch_mult[i_level]
-            for i_block in range(num_res_blocks + 1):
+            for i_block in range(num_res_blocks):
                 block.append(ResnetBlock(in_channels=block_in, out_channels=block_out,
                                          temb_channels=self.temb_ch, dropout=dropout))
                 block_in = block_out
@@ -1020,7 +1020,7 @@ class DMGQDecoder(nn.Module):
         h = self.mid.attn_1(h)
         h = self.mid.block_2(h, temb)
         for i_level in reversed(range(self.num_resolutions)):
-            for i_block in range(self.num_res_blocks + 1):
+            for i_block in range(self.num_res_blocks):
                 h = self.up[i_level].block[i_block](h, temb)
                 if len(self.up[i_level].attn) > 0:
                     h = self.up[i_level].attn[i_block](h)
