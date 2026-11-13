@@ -1,104 +1,151 @@
-# DMDP-FR
+# Dynamic Multi-Granularity Discrete Prior Representation for Blind Face Restoration (DMDP-FR)
 
-Implementation of **DMDP-FR: Dynamic Multi-Granularity Discrete Prior Representation for Blind Face Restoration**. The repository includes the code path needed by DMDP-FR: dynamic DMGQ-VAE prior learning, coarse-to-fine code prediction, granularity-aware fusion, training configs, inference, and visualization/evaluation utilities.
+This is the PyTorch implementation of **DMDP-FR**, including dynamic multi-granularity quantization prior learning, coarse-to-fine code prediction, granularity-aware fusion, training configurations, and inference/evaluation utilities.
 
-[//]: # (> Note: the Python registry names use `DMDPFR` and `DMDPFRModel` because Python identifiers cannot contain `-`. User-facing files, commands, and documentation use the paper name `DMDP-FR`.)
+![Figure 2: DMDP-FR architecture with dynamic multi-granularity quantization, coarse-to-fine code prediction, and granularity-aware multi-scale fusion.](assets/figures/fig-2.png)
 
-## Framework
-
-DMDP-FR restores blind degraded faces in three stages:
+DMDP-FR restores degraded faces in three stages:
 
 | Stage | Module | Purpose |
 | --- | --- | --- |
-| Stage I | Dynamic Multi-Granularity Quantization (DMGQ) | Learns a discrete HQ face prior with adaptive coarse/medium/fine token allocation. |
-| Stage II | Coarse-to-Fine Code Prediction (CFCP) | Predicts HQ-aligned discrete codes from LQ inputs, recovering global structure before local details. |
-| Stage III | Granularity-Aware Multi-Scale Fusion (GAMF) | Injects LQ-guided features into the fixed HQ decoder using predicted granularity distributions. |
+| I | Dynamic Multi-Granularity Quantization (DMGQ) | Learns a discrete HQ face prior with adaptive coarse/medium/fine token allocation. |
+| II | Coarse-to-Fine Code Prediction (CFCP) | Predicts HQ-aligned discrete codes from LQ inputs, recovering global structure before local details. |
+| III | Granularity-Aware Multi-Scale Fusion (GAMF) | Injects LQ-guided features into the fixed HQ decoder using predicted granularity distributions. |
 
-![DMDP-FR framework](assets/figures/framework.png)
+## :runner: TODO
 
-## Results From The DMDP-FR
+- ✅ Provide training code and configurations for all three stages.
+- ✅ Support aligned-face inference, granularity visualization, and image-quality evaluation.
+- ✅ Provide pretrained checkpoint download links.
+- ✅ Provide 256 x 256 paired low-light training configurations and a whole-image Gradio demo.
+- [ ] Add DMDP-FR publication information and BibTeX citation.
 
-### Synthetic CelebA-Test
+## :wrench: Dependencies and Installation
 
-| Method | FID (lower) | LPIPS (lower) | NIQE (lower) | IDA (lower) | PSNR (higher) | SSIM (higher) |
-| --- | ---: |--------------:| ---: | ---: | ---: | ---: |
-| DR2 | 88.504 |         0.484 | 5.656 | 1.203 | 20.805 | 0.609 |
-| BFRffusion | 77.338 |         0.478 | 4.461 | 1.185 | 20.560 | 0.536 |
-| DiffBIR | 69.962 |         0.375 | 5.184 | 1.073 | 21.707 | 0.615 |
-| CodeFormer | 63.621 |         0.365 | 4.516 | **1.019** | 21.451 | 0.581 |
-| RestoreFormer++ | 57.972 |         0.450 | 3.958 | 1.160 | 20.146 | 0.500 |
-| VSPBFR | 56.725 |         0.434 | <u>3.466</u> | 1.195 | 20.114 | 0.526 |
-| GPEN | 56.145 |         0.425 | 3.913 | 1.141 | 20.545 | 0.552 |
-| VQFR | 55.456 |         0.463 | **3.314** | 1.197 | 19.487 | 0.481 |
-| RestoreFormer | 55.425 |         0.463 | 4.003 | 1.179 | 20.149 | 0.500 |
-| AuthFace | 54.624 |         0.389 | 6.378 | 1.136 | 20.618 | 0.567 |
-| DAEFR | 52.987 |         0.388 | 4.417 | <u>1.044</u> | 19.932 | 0.559 |
-| InterLCM | 51.524 |         0.398 | 3.943 | 1.103 | 20.061 | 0.541 |
-| DifFace | <u>51.247</u> |  <u>0.374</u> | 4.631 | 1.060 | <u>22.190</u> | <u>0.633</u> |
-| GFP-GAN | **46.958** |         0.453 | 4.061 | 1.268 | 19.574 | 0.522 |
-| DMDP-FR (ours) | 52.096 |     **0.346** | 5.003 | **1.019** | **22.216** | **0.649** |
+### Step 1: Create the Conda environment
 
-![Synthetic visual comparison](assets/figures/synthetic_results.png)
+The provided [environment.yml](environment.yml) defines the `dmdpfr` environment with Python `3.11.10`, PyTorch `2.5.1+cu124`, TorchVision `0.20.1+cu124`, and TorchAudio `2.5.1+cu124`. It includes CUDA `12.4` runtime packages and the training/evaluation dependencies. Ubuntu `22.04` and an NVIDIA GPU with a CUDA 12.4-compatible driver are recommended.
 
-### Real-World Benchmarks
-
-| Method | LFW FID (lower) | LFW MUSIQ (higher) | WebPhoto FID (lower) | WebPhoto MUSIQ (higher) | WIDER FID (lower) | WIDER MUSIQ (higher) |
-| --- |----------------:|-------------------:|---------------------:|------------------------:|------------------:|---------------------:|
-| DR2 |          58.414 |             69.578 |              119.802 |                  58.600 |            63.433 |               57.133 |
-| BFRffusion |          51.731 |             69.606 |               87.577 |                  62.331 |            58.586 |               61.581 |
-| RestoreFormer++ |          51.870 |             72.249 |        <u>77.637</u> |                  69.542 |            46.363 |               71.511 |
-| DiffBIR |          48.337 |             70.836 |               89.463 |                  68.473 |            49.524 |               68.662 |
-| RestoreFormer |          49.905 |             73.074 |               79.655 |                  69.840 |            51.474 |               67.840 |
-| CodeFormer |          54.407 |             71.430 |               86.456 |                  70.510 |            40.012 |               69.310 |
-| VSPBFR |   <u>47.781</u> |             74.237 |               78.739 |                  70.231 |            38.984 |               62.596 |
-| GPEN |          57.582 |             73.590 |               95.207 |              **73.413** |            54.007 |               65.326 |
-| VQFR |          51.821 |      <u>74.345</u> |               78.251 |                  70.009 |            45.122 |               64.013 |
-| AuthFace |      **47.431** |             73.140 |               92.724 |                  68.991 |            43.351 |               63.325 |
-| DAEFR |          48.849 |             73.840 |           **77.336** |                  70.708 |     <u>37.703</u> |               64.146 |
-| InterLCM |          57.178 |             74.292 |               79.492 |                  69.798 |            41.685 |               65.447 |
-| DifFace |          48.222 |             69.848 |               83.266 |                  65.170 |            37.915 |               65.121 |
-| GFP-GAN |          51.499 |             73.569 |               91.539 |                  68.037 |            40.468 |           **72.814** |
-| DMDP-FR (ours) |          49.687 |         **74.800** |               90.801 |        <u>70.783</u> |        **35.287** |        <u>71.802</u> |
-
-![Real-world visual comparison](assets/figures/realworld_results.png)
-
-### Ablation Summary
-
-| Component | What It Adds                                                                           |
-| --- |----------------------------------------------------------------------------------------|
-| DMGQ | Adaptive token allocation for structurally complex facial regions.                     |
-| CFCP | Hierarchical prediction that stabilizes global layout before fine details.             |
-| GAMF | Input-dependent feature fusion for perception-fidelity control.                        |
-| Triple granularity `{16,32,64}` | Best reported WIDER-Test setting: FID 35.287 with 608 tokens and 0.079 sec/img latency. |
-
-![Ablation and route visualizations](assets/figures/ablation_visuals.png)
-
-## Requirements
-
-| Item | Requirement |
-| --- | --- |
-| OS | Ubuntu 22.04 |
-| Python | 3.10. Recommend using Anaconda or Miniconda. |
-| PyTorch | 2.4 |
-| GPU/CUDA | NVIDIA GPU with CUDA 12.1 |
-
-## Installation
+Clone or download the project into a folder named `DMDP-FR`, then create and activate the environment from the repository root:
 
 ```bash
-conda create -n dmdp-fr python=3.10 -y
-conda activate dmdp-fr
-pip install -r requirements.txt
-```
-```bash
-cd basicsr
-python setup.py develop
+cd /path/to/DMDP-FR
+PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu124 \
+  conda env create -f environment.yml
+conda activate dmdpfr
 ```
 
-## Dataset Preparation
+The extra pip index provides the CUDA 12.4 PyTorch wheels pinned in the YAML file; see the [official PyTorch installation instructions](https://pytorch.org/get-started/previous-versions/#v251).
+
+### Step 2: Install the local BasicSR package
+
+With `dmdpfr` activated, install the project's BasicSR implementation from the repository root. Use `--no-deps` to preserve the dependency versions restored from `environment.yml`:
+
+```bash
+python basicsr/setup.py develop --no-deps
+```
+
+The environment already includes FaceXlib `0.3.0`, LPIPS `0.1.4`, and pyiqa `0.1.16`. Gradio is installed separately for the whole-image demo:
+
+```bash
+python -m pip install -r requirements-gradio.txt
+```
+
+## :rocket: Quick Inference
+
+### Step 1: Prepare pretrained checkpoints
+
+Download the pretrained weights from Baidu Netdisk:
+
+- **BFR:** Weights for the original 512 x 512 blind face restoration model — [Download](https://pan.baidu.com/s/1sZ1qcciduVsgC8UiQhDqBg) (extraction code: `kvur`).
+- **Dark BFR:** Weights for the 256 x 256 low-light blind face restoration model — [Download](https://pan.baidu.com/s/1pIs5WQp4EtkS9hT5GlDWIQ?pwd=6xrh) (extraction code: `6xrh`).
+
+Place the pretrained weights in the following directory structure, taking Dark BFR as an example:
+
+```text
+experiments/
+├── DMDP-FR_darkface_stage1_triple/
+│   └── models/
+│       ├── net_g_latest.pth
+│       └── net_d_latest.pth
+├── DMDP-FR_darkface_stage2_triple/
+│   └── models/
+│       └── net_g_latest.pth
+└── DMDP-FR_darkface_stage3_triple/
+    └── models/
+        ├── net_g_latest.pth
+        └── net_d_latest.pth
+weights/
+└── facelib/
+    ├── detection_Resnet50_Final.pth
+    └── parsing_parsenet.pth
+```
+
+### Step 2: Run the Gradio demo
+
+Start the demo from the repository root after preparing the matching low-light checkpoint:
+
+```bash
+python gradio_app.py
+```
+
+Open `http://127.0.0.1:7860` in your browser:
+
+1. Upload a whole image in **Low-light input image**.
+2. Adjust the detection settings and **DMDP-FR fusion weight** if needed, then click **Restore faces**.
+3. Inspect the restored image, detected landmarks, and original/restored face pairs.
+4. Download the restored faces as PNG files or the full results as a ZIP archive.
+
+![DMDP-FR Gradio demo interface](assets/figures/gradio.png)
+
+The demo defaults to
+`options/DMDP-FR_darkface_stage3_triple.yml` and
+`experiments/DMDP-FR_darkface_stage3_triple/models/net_g_latest.pth`.
+Use `--opt` and `--ckpt` to select another matching DMDP-FR configuration and checkpoint.
+
+[FaceXlib](https://github.com/xinntao/facexlib) downloads these official weights on first use,
+or reads them from `weights/facelib/` (override with `--model-dir`):
+
+- [detection_Resnet50_Final.pth](https://github.com/xinntao/facexlib/releases/download/v0.1.0/detection_Resnet50_Final.pth)
+- [parsing_parsenet.pth](https://github.com/xinntao/facexlib/releases/download/v0.2.2/parsing_parsenet.pth)
+
+Results are saved under `results/gradio/`. Use `--output-dir` to select another output directory.
+
+For a remote GPU machine, keep the default local binding and forward the port:
+`ssh -L 7860:127.0.0.1:7860 user@server`. Set `--host 0.0.0.0` only when LAN access is intended.
+
+### Step 3: Run aligned-face inference
+
+For the original 512 x 512 model, place aligned LQ face crops in an input directory and run:
+
+```bash
+python scripts/visualize_eval_dmdp_fr.py \
+  -i datasets/faces/validation/lq \
+  -o results/dmdp_fr/celebA_test \
+  --opt options/DMDP-FR_stage3_triple.yml \
+  --ckpt_path experiments/pretrained_models/dmdp_fr/dmdp_fr_stage3.pth \
+  --save_comparison \
+  --save_gate_map
+```
+
+The script saves restored faces in `restored/`, side-by-side images in `comparison/`, and granularity visualizations under the selected output directory. Use `--device cpu` for CPU inference. Add `--gt_path` and `--metrics` to evaluate the restored images as described in [Results](#computer-results).
+
+### Step 4: Downstream facial analysis
+
+The restored faces saved in `restored/` can be used as inputs to pretrained models for downstream facial analysis.
+
+- Facial landmark detection: apply a fixed pretrained [FAN](https://github.com/1adrianb/face-alignment) to localize facial landmarks. DMDP-FR restores facial structure and improves landmark alignment with the HQ references, particularly around the eyes and mouth.
+- Face parsing: apply a fixed pretrained [ParseNet](https://github.com/xinntao/facexlib/blob/master/facexlib/parsing/parsenet.py) to predict facial semantic maps. DMDP-FR improves agreement with the HQ reference maps and reduces semantic label mismatches at facial component boundaries.
+
+In the CelebA-Test evaluation, the same pretrained models are applied to degraded inputs, restored faces, and corresponding HQ images. Predictions from the HQ images serve as references. Qualitative comparisons are included in [Results](#computer-results).
+
+## 🚂 Training
+
+### Step 1: Prepare training and validation datasets
 
 Keep all datasets under `./datasets/` and edit the `dataroot_*` fields in `options/*.yml` if your local paths are different.
 
-### Training Dataset
+#### Training dataset
 
 DMDP-FR uses [FFHQ](https://github.com/NVlabs/ffhq-dataset) for all three training stages. The images should be aligned face images at `512x512`.
 
@@ -113,13 +160,17 @@ datasets/
       ...
 ```
 
-### Validation Dataset
+For standard BFR training, Stage I learns the HQ prior without synthetic corruption. LQ/HQ training pairs are generated on the fly using the degradation pipeline in [ffhq_blind_dataset.py](basicsr/data/ffhq_blind_dataset.py), following the degradation formulation used in [CodeFormer](https://github.com/sczhou/CodeFormer) and [DAEFR](https://github.com/LIAGM/DAEFR). The pipeline combines random Gaussian blur, resampling, additive Gaussian noise, and JPEG compression, followed by resizing to the network input size.
+
+Stage III uses [ffhq_blind_joint_dataset.py](basicsr/data/ffhq_blind_joint_dataset.py) to generate both mild and severe degradations. Sampling ranges are specified in the corresponding `options/*.yml` files. Dark BFR uses pre-generated paired low-light images as described in [low-light training](docs/darkface_training.md).
+
+#### Validation and test datasets
 
 Please put the following validation and testing datasets under the `./datasets/` folder.
 
 | Datasets | Data Type | Short Description | Download                                                                                                 |
 | --- | --- | --- |----------------------------------------------------------------------------------------------------------|
-| CelebA-Test | `gt + lq` | 3000 paired HQ/LQ images for full-reference evaluation | [CelabA-Test](https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html)                                         |
+| CelebA-Test | `gt + lq` | 3000 paired HQ/LQ images for full-reference evaluation | [CelebA-Test](https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html)                                         |
 | LFW-Test | `lq only` | 1711 real-world LQ images for testing | [LFW-Test](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/lfw_cropped_faces.zip) |
 | WebPhoto-Test | `lq only` | 407 real-world LQ images for testing | [WebPhoto-Test](https://github.com/TencentARC/GFPGAN)                                                    |
 | WIDER-Test | `lq only` | 970 real-world LQ images for testing | [Wider-Test](https://huggingface.co/datasets/LIAGM/DAEFR_test_datasets/resolve/main/Wider-Test.zip)      |
@@ -163,9 +214,9 @@ datasets/
           ...
 ```
 
-### Optional Latent GT Cache
+#### Optional latent GT cache
 
-Stage-II and Stage-III can either generate DMGQ latent supervision online from `network_vqgan`, or read precomputed latent codes by setting `datasets.train.latent_gt_path` in the YAML config.
+For the original 512 x 512 configurations, Stage-II and Stage-III can either generate DMGQ latent supervision online from `network_vqgan`, or read precomputed latent codes by setting `datasets.train.latent_gt_path` in the YAML config.
 
 Generate the cache with:
 
@@ -185,97 +236,110 @@ datasets:
     latent_gt_path: experiments/pretrained_models/dmgqvae/latent_gt_dmgq_triple_code1024.pth
 ```
 
-## Pretrained Weights
+### Step 2: Configure the three training stages
 
-Download the pretrained weights from Baidu Netdisk:
+The following configurations describe the original 512 x 512 blind face restoration setting:
 
-- Link: [Baidu Netdisk](https://pan.baidu.com/s/1sZ1qcciduVsgC8UiQhDqBg)
-- Extraction code: `kvur`
+| Stage | Configuration | Initialization |
+| --- | --- | --- |
+| I. Triple-granularity prior | [DMDP-FR_stage1_triple.yml](options/DMDP-FR_stage1_triple.yml) | Train the HQ prior from FFHQ images. |
+| I. Optional dual-granularity prior | [DMDP-FR_stage1_dual.yml](options/DMDP-FR_stage1_dual.yml) | Alternative prior with two granularities. |
+| II. Coarse-to-fine code prediction | [DMDP-FR_stage2_triple.yml](options/DMDP-FR_stage2_triple.yml) | Load the matching Stage-I prior for initialization and supervision. |
+| III. Granularity-aware fusion | [DMDP-FR_stage3_triple.yml](options/DMDP-FR_stage3_triple.yml) | Initialize the generator from Stage II and retain supervision from the Stage-I prior. |
 
-Place the downloaded files according to the checkpoint layout below.
+Prepare `weights/lpips/vgg.pth` for the Stage-I perceptual loss. This file is the LPIPS VGG linear-weight checkpoint; the VGG16 feature weights must also be available in the Torch Hub cache. See [low-light training](docs/darkface_training.md#dependencies-and-perceptual-loss-weights) for preparation instructions shared by both settings.
 
-## Checkpoint Layout
+### Step 3: Run training commands
 
-```text
-experiments/pretrained_models/
-  dmgqvae/dmgqvae_stage1_triple.pth
-  dmdp_fr_stage2/net_g_latest.pth
-  dmdp_fr/dmdp_fr_stage3.pth
-weights/
-  lpips/vgg.pth
-```
-
-Stage-2 and Stage-3 use the DMGQ-VAE prior checkpoint through `stage1_model_path` and `network_vqgan.model_path`.
-
-## Training
-
-Train the triple-granularity DMGQ-VAE prior:
+The supplied configurations use one GPU. Run the stages sequentially, updating checkpoint paths after each stage:
 
 ```bash
-python basicsr/train.py -opt options/DMDP-FR_stage1_triple.yml
+# Stage I: Learn the triple-granularity HQ prior.
+python -m basicsr.train -opt options/DMDP-FR_stage1_triple.yml
+
+# Stage II: Train coarse-to-fine code prediction.
+python -m basicsr.train -opt options/DMDP-FR_stage2_triple.yml
+
+# Stage III: Train granularity-aware fusion.
+python -m basicsr.train -opt options/DMDP-FR_stage3_triple.yml
 ```
 
-Optional dual prior:
+For the optional dual-granularity prior:
 
 ```bash
-python basicsr/train.py -opt options/DMDP-FR_stage1_dual.yml
+python -m basicsr.train -opt options/DMDP-FR_stage1_dual.yml
 ```
 
-Train Stage II coarse-to-fine code prediction:
+For distributed training, set `num_gpu: 4` in the selected configuration and launch four GPU processes. For example:
 
 ```bash
-python basicsr/train.py -opt options/DMDP-FR_stage2_triple.yml
+torchrun --nproc_per_node=4 --master_port=29434 --module basicsr.train \
+  -opt options/DMDP-FR_stage1_triple.yml --launcher pytorch
 ```
 
-Train Stage III granularity-aware fusion:
+Use the corresponding Stage-II/III YAML files for subsequent stages. Adjust `batch_size_per_gpu` and `train.grad_accum_steps` for the available GPU memory.
+
+Optional task-specific configurations:
 
 ```bash
-python basicsr/train.py -opt options/DMDP-FR_stage3_triple.yml
+python -m basicsr.train -opt options/DMDP-FR_colorization.yml
+python -m basicsr.train -opt options/DMDP-FR_inpainting.yml
 ```
 
-Distributed training example:
+### Step 4: Train the 256 x 256 low-light model (optional)
+
+For the local paired low-light FFHQ dataset, use the separate configurations:
 
 ```bash
-torchrun --nproc_per_node=4 --master_port=29434 basicsr/train.py -opt options/DMDP-FR_stage1_triple.yml --launcher pytorch
-torchrun --nproc_per_node=4 --master_port=29435 basicsr/train.py -opt options/DMDP-FR_stage2_triple.yml --launcher pytorch
-torchrun --nproc_per_node=4 --master_port=29436 basicsr/train.py -opt options/DMDP-FR_stage3_triple.yml --launcher pytorch
+python -m basicsr.train -opt options/DMDP-FR_darkface_stage1_triple.yml
+python -m basicsr.train -opt options/DMDP-FR_darkface_stage2_triple.yml
+python -m basicsr.train -opt options/DMDP-FR_darkface_stage3_triple.yml
 ```
 
-Optional task-specific configs:
+See [low-light training](docs/darkface_training.md) for data layout, checkpoint dependencies, and resume settings. The folder name `darkface` refers to locally synthesized paired FFHQ data. These configurations use a different architecture from the original 512 x 512 model; their checkpoints and latent caches must match that architecture.
 
-```bash
-python basicsr/train.py -opt options/DMDP-FR_colorization.yml
-python basicsr/train.py -opt options/DMDP-FR_inpainting.yml
-```
+## :computer: Results
 
-## Visualization And Evaluation
+![Quantitative comparisons on CelebA-Test, LFW-Test, WebPhoto-Test, and WIDER-Test.](assets/figures/Tab-2.png)
 
-### With CelebA-Test
+![Qualitative restoration comparisons on synthetic CelebA-Test.](assets/figures/fig-5.png)
+
+![Qualitative restoration comparisons on real-world LFW-Test, WebPhoto-Test, and WIDER-Test.](assets/figures/fig-6.png)
+
+![Low-light restoration and downstream facial landmark detection and face parsing results.](assets/figures/fig-x.jpg)
+
+DMDP-FR demonstrates generalization to low-light face restoration on synthetic FFHQ and real-world WildDark-Face. By recovering facial structure, it also supports downstream facial landmark detection and face parsing, with improved results over the degraded inputs and compared restoration methods.
+
+### 📊 Reproduce the evaluation
+
+#### Step 1: Evaluate on paired CelebA-Test
 
 Use this setting for paired benchmarks such as CelebA-Test. The command saves restored images, LQ/restored/GT comparisons, granularity maps, and full-reference metrics.
 
 ```bash
 python scripts/visualize_eval_dmdp_fr.py \
   -i datasets/faces/validation/lq \
+  -o results/dmdp_fr/celebA_test \
   --gt_path datasets/faces/validation/gt \
   --opt options/DMDP-FR_stage3_triple.yml \
-  --ckpt_path experiments/pretrained_models/dmdp_fr/synthetic_net_g_latest.pth \
-  --fid_ref_path datasets/FFHQ \
+  --ckpt_path experiments/pretrained_models/dmdp_fr/dmdp_fr_stage3.pth \
+  --fid_ref_path datasets/ffhq/ffhq_512 \
   --save_comparison \
   --save_gate_map \
-  --metrics fid,lpips,niqe,psnr,ssim \
+  --metrics fid,lpips,niqe,psnr,ssim
 ```
 
-### Without Real-World Benchmarks
+#### Step 2: Evaluate on real-world benchmarks
 
-Use this setting for real-world LQ-only benchmarks such as LFW-Test, WebPhoto-Test, and WIDER-Test. Do not pass `--gt_path`; use no-reference metrics such as `niqe` and `musiq`.
+Use this setting for real-world LQ-only benchmarks such as LFW-Test, WebPhoto-Test, and WIDER-Test. Omit `--gt_path`. The example below uses a separately prepared real-world checkpoint; update `--ckpt_path` to your downloaded or trained weights and use its matching configuration.
 
 ```bash
 python scripts/visualize_eval_dmdp_fr.py \
   -i datasets/faces/real_world/lfw_test/lq \
+  -o results/dmdp_fr/lfw_test \
   --opt options/DMDP-FR_stage3_triple_iqa_unfreeze.yml \
   --ckpt_path experiments/pretrained_models/dmdp_fr/real-world_net_g_latest.pth \
-  --fid_ref_path datasets/FFHQ \
+  --fid_ref_path datasets/ffhq/ffhq_512 \
   --save_comparison \
   --save_gate_map \
   --metrics fid,musiq \
@@ -284,6 +348,10 @@ python scripts/visualize_eval_dmdp_fr.py \
 
 Replace `datasets/faces/real_world/lfw_test/lq` with `datasets/faces/real_world/webphoto_test/lq` or `datasets/faces/real_world/wider_test/lq` for the other real-world test sets.
 
-## Acknowledgement
+## :book: Citation
+
+Publication details and the BibTeX entry will be added when available.
+
+## :handshake: Acknowledgements
 
 We thank the authors and contributors of [BasicSR](https://github.com/XPixelGroup/BasicSR), [CodeFormer](https://github.com/sczhou/CodeFormer), [VQFR](https://github.com/TencentARC/VQFR), and [DAEFR](https://github.com/LIAGM/DAEFR) for making their code, models, and project resources publicly available.

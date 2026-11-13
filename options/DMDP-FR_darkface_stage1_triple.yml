@@ -1,0 +1,143 @@
+# Stage I: learn a normal-light HQ prior from darkface/train/gt only.
+name: DMDP-FR_darkface_stage1_triple
+name_with_timestamp: false
+model_type: DMGQVAEModel
+num_gpu: 1
+manual_seed: 0
+scale: 1
+
+datasets:
+  train:
+    name: DarkFace-HQ-train
+    type: FFHQBlindDataset
+    dataroot_gt: ../darkface/train/gt
+    io_backend:
+      type: disk
+    in_size: 256
+    gt_size: 256
+    mean: [0.5, 0.5, 0.5]
+    std: [0.5, 0.5, 0.5]
+    use_hflip: true
+    use_corrupt: false
+    gray_prob: 0.0
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 2
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+    pin_memory: true
+  val:
+    name: DarkFace-HQ-val
+    type: PairedImageDataset
+    # Stage I validates HQ reconstruction, not low-light restoration.
+    dataroot_lq: ../darkface/val/gt
+    dataroot_gt: ../darkface/val/gt
+    io_backend:
+      type: disk
+    mean: [0.5, 0.5, 0.5]
+    std: [0.5, 0.5, 0.5]
+
+network_g:
+  type: DMGQVAE
+  grain_type: triple
+  img_size: 256
+  ch: 128
+  # Six encoder levels: fine=32, median=16, coarse=8.
+  ch_mult: [1, 1, 2, 2, 4, 4]
+  num_res_blocks: 2
+  attn_resolutions: [8, 16, 32]
+  dropout: 0.0
+  resamp_with_conv: true
+  in_channels: 3
+  z_channels: 256
+  router_config:
+    num_channels: 256
+    normalization_type: group-32
+    gate_type: 2layer-fc-SiLu
+  # Three upsamplings: 32 -> 64 -> 128 -> 256.
+  decoder_ch_mult: [1, 1, 2, 4]
+  latent_size: 32
+  decoder_attn_resolutions: [32]
+  decoder_position_type: fourier+learned
+  codebook_size: 1024
+  codebook_dim: 256
+  commitment_beta: 0.25
+  decay: 0.99
+  restart_unused_codes: true
+  quant_before_dim: 256
+  quant_after_dim: 256
+  quant_sample_temperature: 0.0
+
+network_d:
+  type: UNetDiscriminatorSN
+  num_in_ch: 3
+
+path:
+  pretrain_network_g: ~
+  param_key_g: params_ema
+  strict_load_g: true
+  pretrain_network_d: ~
+  strict_load_d: true
+  resume_state: ~
+
+train:
+  use_amp: true
+  amp_dtype: float16
+  grad_accum_steps: 2
+  codebook_weight: 1.0
+  pixelloss_weight: 1.0
+  disc_weight: 0.8
+  perceptual_weight: 1.0
+  lpips_weight_path: weights/lpips/vgg.pth
+  gan_opt:
+    type: GANLoss
+    gan_type: hinge
+    loss_weight: 1.0
+  budget_opt:
+    target_fine_ratio: 0.50
+    target_median_ratio: 0.30
+    gamma: 1.0
+    min_grain_size: 8
+    median_grain_size: 16
+    max_grain_size: 32
+  optim_g:
+    type: Adam
+    lr: !!float 1e-4
+    betas: [0.9, 0.99]
+  optim_d:
+    type: Adam
+    lr: !!float 1e-4
+    betas: [0.9, 0.99]
+  scheduler:
+    type: MultiStepLR
+    milestones: [100000, 150000]
+    gamma: 0.5
+  total_iter: 200000
+  warmup_iter: -1
+  ema_decay: 0.995
+  net_g_start_iter: 0
+  net_d_iters: 1
+  net_d_start_iter: 10001
+
+val:
+  val_freq: 5000
+  save_img: false
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 0
+      test_y_channel: false
+logger:
+  print_freq: 100
+  save_checkpoint_freq: 5000
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+dist_params:
+  backend: nccl
+  port: 29541
+find_unused_parameters: true

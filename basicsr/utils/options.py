@@ -49,7 +49,9 @@ def parse(opt_path, root_path, is_train=True):
     if opt['path'].get('resume_state', None): # Shangchen added
         resume_state_path = opt['path'].get('resume_state')
         opt['name'] = resume_state_path.split("/")[-3]
-    else:
+    elif opt.get('name_with_timestamp', True):
+        # Stable names let task-specific stages refer to the preceding stage's
+        # checkpoint. Existing configurations retain timestamped run names.
         opt['name'] = f"{get_time_str()}_{opt['name']}"
 
 

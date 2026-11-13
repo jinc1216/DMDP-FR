@@ -1,0 +1,177 @@
+# Stage III: low-light paired supervision for granularity-aware image fusion.
+name: DMDP-FR_darkface_stage3_triple
+name_with_timestamp: false
+model_type: DMDPFRModel
+num_gpu: 1
+manual_seed: 0
+scale: 1
+
+datasets:
+  train:
+    name: DarkFace-paired-train
+    type: PairedImageDataset
+    dataroot_lq: ../darkface/train/lq
+    dataroot_gt: ../darkface/train/gt
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+    gt_size: 256
+    mean: [0.5, 0.5, 0.5]
+    std: [0.5, 0.5, 0.5]
+    use_flip: true
+    use_rot: false
+    latent_gt_path: ~
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 4
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+    pin_memory: true
+  val:
+    name: DarkFace-paired-val
+    type: PairedImageDataset
+    dataroot_lq: ../darkface/val/lq
+    dataroot_gt: ../darkface/val/gt
+    io_backend:
+      type: disk
+    mean: [0.5, 0.5, 0.5]
+    std: [0.5, 0.5, 0.5]
+
+network_g:
+  type: DMDPFR
+  grain_type: triple
+  img_size: 256
+  ch: 128
+  ch_mult: [1, 1, 2, 2, 4, 4]
+  num_res_blocks: 2
+  attn_resolutions: [8, 16, 32]
+  in_channels: 3
+  z_channels: 256
+  router_config:
+    num_channels: 256
+    normalization_type: group-32
+    gate_type: 2layer-fc-SiLu
+  decoder_ch_mult: [1, 1, 2, 4]
+  latent_size: 32
+  decoder_attn_resolutions: [32]
+  decoder_position_type: fourier+learned
+  codebook_size: 1024
+  codebook_dim: 256
+  dim_embd: 512
+  n_head: 8
+  n_layers: 9
+  max_position_tokens: 4096
+  connect_list: ['64', '128']
+  fix_modules: ['quantize', 'decoder', 'post_quant_conv', 'grain_latent_adapters']
+
+network_vqgan:
+  type: DMGQVAE
+  grain_type: triple
+  img_size: 256
+  ch: 128
+  ch_mult: [1, 1, 2, 2, 4, 4]
+  num_res_blocks: 2
+  attn_resolutions: [8, 16, 32]
+  in_channels: 3
+  z_channels: 256
+  router_config:
+    num_channels: 256
+    normalization_type: group-32
+    gate_type: 2layer-fc-SiLu
+  decoder_ch_mult: [1, 1, 2, 4]
+  latent_size: 32
+  decoder_attn_resolutions: [32]
+  decoder_position_type: fourier+learned
+  codebook_size: 1024
+  codebook_dim: 256
+  model_path: experiments/DMDP-FR_darkface_stage1_triple/models/net_g_latest.pth
+
+network_d:
+  type: UNetDiscriminatorSN
+  num_in_ch: 3
+
+path:
+  pretrain_network_g: experiments/DMDP-FR_darkface_stage2_triple/models/net_g_latest.pth
+  param_key_g: params_ema
+  strict_load_g: true
+  pretrain_network_d: ~
+  strict_load_d: true
+  resume_state: ~
+
+train:
+  use_amp: true
+  amp_dtype: float16
+  grad_accum_steps: 2
+  use_hq_feat_loss: true
+  feat_loss_weight: 1.0
+  code_loss_weight_coarse: 0.1
+  code_loss_weight_median: 0.3
+  code_loss_weight_fine: 1.0
+  gate_loss_weight: 0.6
+  encoder_gate_loss_weight: 0.2
+  supervise_all_codes: true
+  fidelity_weight: 1.0
+  # The dataset has one saved low-light observation per GT. Every iteration
+  # applies image losses; never enter the old large-degradation code-only phase.
+  use_large_de_train: false
+  fix_generator: true
+  reset_stage3_fusion: true
+  scale_adaptive_gan_weight: 0.1
+  optim_g:
+    type: Adam
+    lr: !!float 5e-5
+    weight_decay: 0
+    betas: [0.9, 0.99]
+  optim_d:
+    type: Adam
+    lr: !!float 5e-5
+    weight_decay: 0
+    betas: [0.9, 0.99]
+  scheduler:
+    type: CosineAnnealingRestartLR
+    periods: [50000]
+    restart_weights: [1]
+    eta_min: !!float 1e-6
+  total_iter: 50000
+  warmup_iter: -1
+  ema_decay: 0.997
+  pixel_opt:
+    type: L1Loss
+    loss_weight: 1.0
+    reduction: mean
+  perceptual_opt:
+    type: LPIPSLoss
+    loss_weight: 1.0
+    use_input_norm: true
+    range_norm: true
+  gan_opt:
+    type: GANLoss
+    gan_type: hinge
+    loss_weight: 1.0
+  use_adaptive_weight: true
+  net_g_start_iter: 0
+  net_d_iters: 1
+  net_d_start_iter: 5001
+
+val:
+  val_freq: 2000
+  save_img: false
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 0
+      test_y_channel: false
+logger:
+  print_freq: 100
+  save_checkpoint_freq: 2000
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+dist_params:
+  backend: nccl
+  port: 29543
+find_unused_parameters: true

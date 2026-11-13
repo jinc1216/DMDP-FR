@@ -1,0 +1,150 @@
+# Stage II: predict HQ codes/routes from the saved low-light images.
+name: DMDP-FR_darkface_stage2_triple
+name_with_timestamp: false
+model_type: DMDPFRModel
+num_gpu: 1
+manual_seed: 0
+scale: 1
+
+datasets:
+  train:
+    name: DarkFace-paired-train
+    type: PairedImageDataset
+    dataroot_lq: ../darkface/train/lq
+    dataroot_gt: ../darkface/train/gt
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+    gt_size: 256
+    mean: [0.5, 0.5, 0.5]
+    std: [0.5, 0.5, 0.5]
+    use_flip: true
+    use_rot: false
+    # Online HQ supervision follows the augmented GT; no 512px latent cache.
+    latent_gt_path: ~
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 4
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+    pin_memory: true
+  val:
+    name: DarkFace-paired-val
+    type: PairedImageDataset
+    dataroot_lq: ../darkface/val/lq
+    dataroot_gt: ../darkface/val/gt
+    io_backend:
+      type: disk
+    mean: [0.5, 0.5, 0.5]
+    std: [0.5, 0.5, 0.5]
+
+network_g:
+  type: DMDPFR
+  grain_type: triple
+  img_size: 256
+  ch: 128
+  ch_mult: [1, 1, 2, 2, 4, 4]
+  num_res_blocks: 2
+  attn_resolutions: [8, 16, 32]
+  in_channels: 3
+  z_channels: 256
+  router_config:
+    num_channels: 256
+    normalization_type: group-32
+    gate_type: 2layer-fc-SiLu
+  decoder_ch_mult: [1, 1, 2, 4]
+  latent_size: 32
+  decoder_attn_resolutions: [32]
+  decoder_position_type: fourier+learned
+  codebook_size: 1024
+  codebook_dim: 256
+  dim_embd: 512
+  n_head: 8
+  n_layers: 9
+  max_position_tokens: 4096
+  connect_list: ['64', '128']
+  fix_modules: ['quantize', 'decoder', 'post_quant_conv', 'grain_latent_adapters']
+  # Initializes the encoder, codebook and decoder from our 256px Stage I.
+  stage1_model_path: experiments/DMDP-FR_darkface_stage1_triple/models/net_g_latest.pth
+
+network_vqgan:
+  type: DMGQVAE
+  grain_type: triple
+  img_size: 256
+  ch: 128
+  ch_mult: [1, 1, 2, 2, 4, 4]
+  num_res_blocks: 2
+  attn_resolutions: [8, 16, 32]
+  in_channels: 3
+  z_channels: 256
+  router_config:
+    num_channels: 256
+    normalization_type: group-32
+    gate_type: 2layer-fc-SiLu
+  decoder_ch_mult: [1, 1, 2, 4]
+  latent_size: 32
+  decoder_attn_resolutions: [32]
+  decoder_position_type: fourier+learned
+  codebook_size: 1024
+  codebook_dim: 256
+  model_path: experiments/DMDP-FR_darkface_stage1_triple/models/net_g_latest.pth
+
+path:
+  # Stage II starts from stage1_model_path, with new code prediction layers.
+  pretrain_network_g: ~
+  param_key_g: params_ema
+  strict_load_g: true
+  resume_state: ~
+
+train:
+  use_amp: true
+  amp_dtype: float16
+  grad_accum_steps: 2
+  use_hq_feat_loss: true
+  feat_loss_weight: 1.0
+  code_loss_weight_coarse: 0.1
+  code_loss_weight_median: 0.3
+  code_loss_weight_fine: 1.0
+  gate_loss_weight: 0.6
+  encoder_gate_loss_weight: 0.2
+  supervise_all_codes: true
+  fidelity_weight: 0.0
+  use_large_de_train: false
+  optim_g:
+    type: Adam
+    lr: !!float 1e-4
+    weight_decay: 0
+    betas: [0.9, 0.99]
+  scheduler:
+    type: MultiStepLR
+    milestones: [60000, 90000]
+    gamma: 0.5
+  total_iter: 100000
+  warmup_iter: -1
+  ema_decay: 0.995
+  net_g_start_iter: 0
+  net_d_iters: 1
+  net_d_start_iter: 0
+
+val:
+  val_freq: 5000
+  save_img: false
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 0
+      test_y_channel: false
+logger:
+  print_freq: 100
+  save_checkpoint_freq: 5000
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+dist_params:
+  backend: nccl
+  port: 29542
+find_unused_parameters: true
