@@ -350,8 +350,10 @@ Replace `datasets/faces/real_world/lfw_test/lq` with `datasets/faces/real_world/
 
 ## :book: Citation
 
-Publication details and the BibTeX entry will be added when available.
-
 ## :handshake: Acknowledgements
 
-We thank the authors and contributors of [BasicSR](https://github.com/XPixelGroup/BasicSR), [CodeFormer](https://github.com/sczhou/CodeFormer), [VQFR](https://github.com/TencentARC/VQFR), and [DAEFR](https://github.com/LIAGM/DAEFR) for making their code, models, and project resources publicly available.
+This project is based on [BasicSR](https://github.com/XPixelGroup/BasicSR), [CodeFormer](https://github.com/sczhou/CodeFormer), [VQFR](https://github.com/TencentARC/VQFR), and [DAEFR](https://github.com/LIAGM/DAEFR).
+
+## :postbox: Contact
+
+If you have any questions, feel free to approach me at jinchuan@tongji.edu.cn
